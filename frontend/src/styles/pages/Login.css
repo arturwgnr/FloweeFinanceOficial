@@ -1,0 +1,86 @@
+.auth-page {
+  min-height: 100vh;
+
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 40%, #f3f4f6 100%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.auth-page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  opacity: 0.12;
+
+  pointer-events: none;
+}
+
+.logo-symbol {
+  font-weight: bold;
+  color: white;
+}
+
+.center-card {
+  display: block;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.auth-page__container {
+  width: 100%;
+  max-width: 28rem;
+}
+
+.auth-page__logo-wrap {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-page__logo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.auth-page__logo-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: #10b77f;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-page__logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.auth-page__error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 0.875rem;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.auth-page__link {
+  color: #10b77f;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-page__link:hover {
+  text-decoration: underline;
+}

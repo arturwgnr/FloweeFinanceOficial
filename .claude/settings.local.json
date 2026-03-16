@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:/Users/User/Desktop/Artur Wagner/Software Engineer/VibeCode/FloweeFinance/frontend\" && npm install react-hot-toast)",
+      "Bash(cd \"C:/Users/User/Desktop/Artur Wagner/Software Engineer/VibeCode/FloweeFinance/frontend\" && npm run build 2>&1)"
+    ]
+  }
+}

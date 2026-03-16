@@ -1,0 +1,150 @@
+.transactions__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transactions__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.transactions__subtitle {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.transactions__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.transactions__list-card {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+  border: 1px solid #f3f4f6;
+  padding: 0;
+  overflow: hidden;
+}
+
+.transactions__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+.transactions__empty {
+  text-align: center;
+  padding: 4rem 0;
+}
+
+.transactions__empty-title {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.transactions__empty-sub {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.transactions__rows {
+  padding: 0.5rem;
+}
+
+.transactions__rows > * + * {
+  border-top: 1px solid #f9fafb;
+}
+
+.tx-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  transition: background-color 150ms;
+}
+
+.tx-row:hover {
+  background-color: #f9fafb;
+}
+
+.tx-row__left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.tx-row__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tx-row__info {
+  min-width: 0;
+}
+
+.tx-row__desc {
+  font-weight: 500;
+  color: #111827;
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-row__meta {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-top: 0.125rem;
+}
+
+.tx-row__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  margin-left: 1rem;
+}
+
+.tx-row__edit-btn {
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: background-color 150ms, color 150ms;
+}
+
+.tx-row__edit-btn:hover {
+  background-color: #e5e7eb;
+  color: #4b5563;
+}
+
+.tx-row__delete-btn {
+  padding: 0.375rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: background-color 150ms, color 150ms;
+}
+
+.tx-row__delete-btn:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+}

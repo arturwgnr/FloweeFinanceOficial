@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: flowee_db
+    environment:
+      POSTGRES_USER: flowee_user
+      POSTGRES_PASSWORD: flowee_pass
+      POSTGRES_DB: flowee
+    ports:
+      - "5433:5432"
+    volumes:
+      - flowee_data:/var/lib/postgresql/data
+
+volumes:
+  flowee_data:
