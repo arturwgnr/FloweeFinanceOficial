@@ -1,9 +1,20 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-const VALID_CATEGORIES = ['Food', 'Transport', 'Housing', 'Health', 'Entertainment', 'Shopping', 'Education', 'Other'];
-
+const VALID_CATEGORIES = [
+  "Food",
+  "Supermarket",
+  "Transport",
+  "Housing",
+  "Health",
+  "Entertainment",
+  "Shopping",
+  "Education",
+  "Travel",
+  "Loan",
+  "Other",
+];
 async function list(req, res) {
   try {
     const { month, year, type, category } = req.query;
@@ -29,30 +40,33 @@ async function list(req, res) {
 
     const transactions = await prisma.transaction.findMany({
       where,
-      orderBy: { date: 'desc' },
+      orderBy: { date: "desc" },
     });
     res.json({ transactions });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 }
 
 async function create(req, res) {
   try {
-    const { amount, type, category, description, date } = req.body;
+    const { amount, type, category, description, date, recurring } = req.body;
     if (!amount || !type || !category || !date) {
-      return res.status(400).json({ error: 'amount, type, category, and date are required' });
+      return res
+        .status(400)
+        .json({ error: "amount, type, category, and date are required" });
     }
-    if (!['INCOME', 'EXPENSE'].includes(type)) {
-      return res.status(400).json({ error: 'type must be INCOME or EXPENSE' });
+    if (!["INCOME", "EXPENSE"].includes(type)) {
+      return res.status(400).json({ error: "type must be INCOME or EXPENSE" });
     }
     if (!VALID_CATEGORIES.includes(category)) {
-      return res.status(400).json({ error: 'Invalid category' });
+      return res.status(400).json({ error: "Invalid category" });
     }
 
-    const [y, m, d] = date.split('-').map(Number);
+    const [y, m, d] = date.split("-").map(Number);
     const parsedDate = new Date(y, m - 1, d);
+    const isRecurring = !!recurring;
 
     const transaction = await prisma.transaction.create({
       data: {
@@ -62,12 +76,34 @@ async function create(req, res) {
         category,
         description: description || null,
         date: parsedDate,
+        recurring: isRecurring,
+        recurringDay: isRecurring ? d : null,
       },
     });
+
+    if (isRecurring && m < 12) {
+      const futureEntries = [];
+      for (let futureMonth = m + 1; futureMonth <= 12; futureMonth++) {
+        const daysInMonth = new Date(y, futureMonth, 0).getDate();
+        const adjustedDay = Math.min(d, daysInMonth);
+        futureEntries.push({
+          userId: req.userId,
+          amount: parseFloat(amount),
+          type,
+          category,
+          description: description || null,
+          date: new Date(y, futureMonth - 1, adjustedDay),
+          recurring: true,
+          recurringDay: d,
+        });
+      }
+      await prisma.transaction.createMany({ data: futureEntries });
+    }
+
     res.status(201).json({ transaction });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 }
 
@@ -77,7 +113,8 @@ async function update(req, res) {
     const existing = await prisma.transaction.findFirst({
       where: { id, userId: req.userId },
     });
-    if (!existing) return res.status(404).json({ error: 'Transaction not found' });
+    if (!existing)
+      return res.status(404).json({ error: "Transaction not found" });
 
     const { amount, type, category, description, date } = req.body;
     const data = {};
@@ -86,15 +123,18 @@ async function update(req, res) {
     if (category !== undefined) data.category = category;
     if (description !== undefined) data.description = description;
     if (date !== undefined) {
-      const [y, m, d2] = date.split('-').map(Number);
+      const [y, m, d2] = date.split("-").map(Number);
       data.date = new Date(y, m - 1, d2);
     }
 
-    const transaction = await prisma.transaction.update({ where: { id }, data });
+    const transaction = await prisma.transaction.update({
+      where: { id },
+      data,
+    });
     res.json({ transaction });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 }
 
@@ -104,13 +144,14 @@ async function remove(req, res) {
     const existing = await prisma.transaction.findFirst({
       where: { id, userId: req.userId },
     });
-    if (!existing) return res.status(404).json({ error: 'Transaction not found' });
+    if (!existing)
+      return res.status(404).json({ error: "Transaction not found" });
 
     await prisma.transaction.delete({ where: { id } });
     res.json({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: "Server error" });
   }
 }
 

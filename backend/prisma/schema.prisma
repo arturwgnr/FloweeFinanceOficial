@@ -19,15 +19,17 @@ model User {
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount      Float
-  type        String
-  category    String
-  description String?
-  date        DateTime
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Float
+  type         String
+  category     String
+  description  String?
+  date         DateTime
+  recurring    Boolean  @default(false)
+  recurringDay Int?
+  createdAt    DateTime @default(now())
 }
 
 model Budget {

@@ -5,12 +5,15 @@ import "../styles/components/TransactionModal.css";
 
 const CATEGORIES = [
   "Food",
+  "Supermarket",
   "Transport",
   "Housing",
   "Health",
   "Entertainment",
   "Shopping",
   "Education",
+  "Travel",
+  "Loan",
   "Other",
 ];
 
@@ -33,6 +36,8 @@ export default function TransactionModal({
   const [error, setError] = useState("");
 
   const [keepOpen, setKeepOpen] = useState(false);
+  const [recurring, setRecurring] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (transaction) {
@@ -47,14 +52,15 @@ export default function TransactionModal({
       setForm(defaultForm);
     }
     setError("");
+    setRecurring(false);
+    setConfirmOpen(false);
   }, [transaction, isOpen]);
 
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function submitTransaction() {
     setError("");
     setLoading(true);
     try {
@@ -62,9 +68,18 @@ export default function TransactionModal({
         await api.put(`/transactions/${transaction.id}`, form);
         toast.success("Transaction updated");
       } else {
-        await api.post("/transactions", form);
-        toast.success("Transaction added");
+        await api.post("/transactions", { ...form, recurring });
+        toast.success(
+          recurring ? "Recurring transactions added" : "Transaction added",
+        );
       }
+
+      setForm((prev) => ({
+        ...defaultForm,
+        category: prev.category,
+        date: prev.date,
+      }));
+
       onSave();
       if (!keepOpen) onClose();
     } catch (err) {
@@ -76,158 +91,217 @@ export default function TransactionModal({
     }
   }
 
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (recurring && !transaction?.id) {
+      setConfirmOpen(true);
+      return;
+    }
+    await submitTransaction();
+  }
+
+  function getConfirmMessage() {
+    const [y, m] = form.date.split("-").map(Number);
+    const label = new Date(y, m - 1, 1).toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
+    return `This transaction will repeat every month starting from ${label}. You can delete future occurrences individually.`;
+  }
+
   if (!isOpen) return null;
 
   return (
-    <div className="tx-modal__overlay">
-      <div className="tx-modal__box">
-        <div className="tx-modal__header">
-          <h2 className="tx-modal__title">
-            {transaction ? "Edit Transaction" : "Add Transaction"}
-          </h2>
-          <button onClick={onClose} className="tx-modal__close-btn">
-            <svg
-              className="tx-modal__close-icon"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
+    <>
+      <div className="tx-modal__overlay">
+        <div className="tx-modal__box">
+          <div className="tx-modal__header">
+            <h2 className="tx-modal__title">
+              {transaction ? "Edit Transaction" : "Add Transaction"}
+            </h2>
+            <button onClick={onClose} className="tx-modal__close-btn">
+              <svg
+                className="tx-modal__close-icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="tx-modal__form">
+            {error && <div className="tx-modal__error">{error}</div>}
+
+            {/* Type toggle */}
+            <div>
+              <label className="label">Type</label>
+              <div className="tx-modal__type-toggle">
+                {["EXPENSE", "INCOME"].map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, type: t }))}
+                    className={`tx-modal__type-btn ${
+                      form.type === t
+                        ? t === "INCOME"
+                          ? "tx-modal__type-btn--income"
+                          : "tx-modal__type-btn--expense"
+                        : ""
+                    }`}
+                  >
+                    {t === "INCOME" ? "↑ Income" : "↓ Expense"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="amount">
+                Amount ($)
+              </label>
+              <input
+                id="amount"
+                type="number"
+                name="amount"
+                value={form.amount}
+                onChange={handleChange}
+                className="input"
+                placeholder="0.00"
+                min="0.01"
+                step="0.01"
+                required
               />
-            </svg>
-          </button>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="category">
+                Category
+              </label>
+              <select
+                id="category"
+                name="category"
+                value={form.category}
+                onChange={handleChange}
+                className="input"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="description">
+                Description (optional)
+              </label>
+              <input
+                id="description"
+                type="text"
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                className="input"
+                placeholder="e.g. Grocery shopping"
+              />
+            </div>
+
+            <div>
+              <label className="label" htmlFor="date">
+                Date
+              </label>
+              <input
+                id="date"
+                type="date"
+                name="date"
+                value={form.date}
+                onChange={handleChange}
+                className="input"
+                required
+              />
+            </div>
+
+            <div className="tx-modal__checkboxes">
+              <label className="tx-modal__keep-open">
+                <input
+                  type="checkbox"
+                  checked={keepOpen}
+                  onChange={(e) => setKeepOpen(e.target.checked)}
+                />
+                Keep open after saving
+              </label>
+              {!transaction && (
+                <label className="tx-modal__keep-open">
+                  <input
+                    type="checkbox"
+                    checked={recurring}
+                    onChange={(e) => setRecurring(e.target.checked)}
+                  />
+                  Repeat monthly
+                </label>
+              )}
+            </div>
+
+            <div className="tx-modal__actions">
+              <button
+                type="button"
+                onClick={onClose}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary flex-1"
+              >
+                {loading
+                  ? "Saving..."
+                  : transaction
+                    ? "Save Changes"
+                    : "Add Transaction"}
+              </button>
+            </div>
+          </form>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit} className="tx-modal__form">
-          {error && <div className="tx-modal__error">{error}</div>}
-
-          {/* Type toggle */}
-          <div>
-            <label className="label">Type</label>
-            <div className="tx-modal__type-toggle">
-              {["EXPENSE", "INCOME"].map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setForm((prev) => ({ ...prev, type: t }))}
-                  className={`tx-modal__type-btn ${
-                    form.type === t
-                      ? t === "INCOME"
-                        ? "tx-modal__type-btn--income"
-                        : "tx-modal__type-btn--expense"
-                      : ""
-                  }`}
-                >
-                  {t === "INCOME" ? "↑ Income" : "↓ Expense"}
-                </button>
-              ))}
+      {confirmOpen && (
+        <div className="tx-confirm__overlay">
+          <div className="tx-confirm__box">
+            <p className="tx-confirm__title">Repeat monthly?</p>
+            <p className="tx-confirm__message">{getConfirmMessage()}</p>
+            <div className="tx-confirm__actions">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={async () => {
+                  setConfirmOpen(false);
+                  await submitTransaction();
+                }}
+                className="btn-primary flex-1"
+              >
+                {loading ? "Saving..." : "Confirm"}
+              </button>
             </div>
           </div>
-
-          <div>
-            <label className="label" htmlFor="amount">
-              Amount ($)
-            </label>
-            <input
-              id="amount"
-              type="number"
-              name="amount"
-              value={form.amount}
-              onChange={handleChange}
-              className="input"
-              placeholder="0.00"
-              min="0.01"
-              step="0.01"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="label" htmlFor="category">
-              Category
-            </label>
-            <select
-              id="category"
-              name="category"
-              value={form.category}
-              onChange={handleChange}
-              className="input"
-            >
-              {CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="label" htmlFor="description">
-              Description (optional)
-            </label>
-            <input
-              id="description"
-              type="text"
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              className="input"
-              placeholder="e.g. Grocery shopping"
-            />
-          </div>
-
-          <div>
-            <label className="label" htmlFor="date">
-              Date
-            </label>
-            <input
-              id="date"
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={handleChange}
-              className="input"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="tx-modal__keep-open">
-              <input
-                type="checkbox"
-                checked={keepOpen}
-                onChange={(e) => setKeepOpen(e.target.checked)}
-              />
-              Keep open after saving
-            </label>
-          </div>
-
-          <div className="tx-modal__actions">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary flex-1"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary flex-1"
-            >
-              {loading
-                ? "Saving..."
-                : transaction
-                  ? "Save Changes"
-                  : "Add Transaction"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }

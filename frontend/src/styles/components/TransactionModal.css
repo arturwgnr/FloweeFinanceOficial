@@ -120,8 +120,58 @@
   overflow: hidden;
 }
 
+.tx-modal__checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .tx-modal__actions {
   display: flex;
   gap: 0.75rem;
   padding-top: 0.5rem;
+}
+
+/* Confirmation dialog */
+.tx-confirm__overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.tx-confirm__box {
+  background-color: #ffffff;
+  border-radius: 1rem;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tx-confirm__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.tx-confirm__message {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.tx-confirm__actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
 }
