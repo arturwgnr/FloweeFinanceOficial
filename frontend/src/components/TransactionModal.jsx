@@ -1,22 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import api from '../services/api';
-import '../styles/components/TransactionModal.css';
+import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import api from "../services/api";
+import "../styles/components/TransactionModal.css";
 
-const CATEGORIES = ['Food', 'Transport', 'Housing', 'Health', 'Entertainment', 'Shopping', 'Education', 'Other'];
+const CATEGORIES = [
+  "Food",
+  "Transport",
+  "Housing",
+  "Health",
+  "Entertainment",
+  "Shopping",
+  "Education",
+  "Other",
+];
 
 const defaultForm = {
-  amount: '',
-  type: 'EXPENSE',
-  category: 'Food',
-  description: '',
-  date: new Date().toISOString().split('T')[0],
+  amount: "",
+  type: "EXPENSE",
+  category: "Food",
+  description: "",
+  date: new Date().toISOString().split("T")[0],
 };
 
-export default function TransactionModal({ isOpen, onClose, onSave, transaction }) {
+export default function TransactionModal({
+  isOpen,
+  onClose,
+  onSave,
+  transaction,
+}) {
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+
+  const [keepOpen, setKeepOpen] = useState(false);
 
   useEffect(() => {
     if (transaction) {
@@ -24,13 +40,13 @@ export default function TransactionModal({ isOpen, onClose, onSave, transaction 
         amount: transaction.amount,
         type: transaction.type,
         category: transaction.category,
-        description: transaction.description || '',
-        date: new Date(transaction.date).toISOString().split('T')[0],
+        description: transaction.description || "",
+        date: new Date(transaction.date).toISOString().split("T")[0],
       });
     } else {
       setForm(defaultForm);
     }
-    setError('');
+    setError("");
   }, [transaction, isOpen]);
 
   function handleChange(e) {
@@ -39,20 +55,20 @@ export default function TransactionModal({ isOpen, onClose, onSave, transaction 
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
     try {
       if (transaction?.id) {
         await api.put(`/transactions/${transaction.id}`, form);
-        toast.success('Transaction updated');
+        toast.success("Transaction updated");
       } else {
-        await api.post('/transactions', form);
-        toast.success('Transaction added');
+        await api.post("/transactions", form);
+        toast.success("Transaction added");
       }
       onSave();
-      onClose();
+      if (!keepOpen) onClose();
     } catch (err) {
-      const msg = err.response?.data?.error || 'Failed to save transaction';
+      const msg = err.response?.data?.error || "Failed to save transaction";
       setError(msg);
       toast.error(msg);
     } finally {
@@ -67,45 +83,55 @@ export default function TransactionModal({ isOpen, onClose, onSave, transaction 
       <div className="tx-modal__box">
         <div className="tx-modal__header">
           <h2 className="tx-modal__title">
-            {transaction ? 'Edit Transaction' : 'Add Transaction'}
+            {transaction ? "Edit Transaction" : "Add Transaction"}
           </h2>
           <button onClick={onClose} className="tx-modal__close-btn">
-            <svg className="tx-modal__close-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="tx-modal__close-icon"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="tx-modal__form">
-          {error && (
-            <div className="tx-modal__error">{error}</div>
-          )}
+          {error && <div className="tx-modal__error">{error}</div>}
 
           {/* Type toggle */}
           <div>
             <label className="label">Type</label>
             <div className="tx-modal__type-toggle">
-              {['EXPENSE', 'INCOME'].map((t) => (
+              {["EXPENSE", "INCOME"].map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setForm((prev) => ({ ...prev, type: t }))}
-                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  className={`tx-modal__type-btn ${
                     form.type === t
-                      ? t === 'INCOME'
-                        ? 'bg-green-500 text-white'
-                        : 'bg-red-500 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? t === "INCOME"
+                        ? "tx-modal__type-btn--income"
+                        : "tx-modal__type-btn--expense"
+                      : ""
                   }`}
                 >
-                  {t === 'INCOME' ? '↑ Income' : '↓ Expense'}
+                  {t === "INCOME" ? "↑ Income" : "↓ Expense"}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="label" htmlFor="amount">Amount ($)</label>
+            <label className="label" htmlFor="amount">
+              Amount ($)
+            </label>
             <input
               id="amount"
               type="number"
@@ -121,16 +147,28 @@ export default function TransactionModal({ isOpen, onClose, onSave, transaction 
           </div>
 
           <div>
-            <label className="label" htmlFor="category">Category</label>
-            <select id="category" name="category" value={form.category} onChange={handleChange} className="input">
+            <label className="label" htmlFor="category">
+              Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              className="input"
+            >
               {CATEGORIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="label" htmlFor="description">Description (optional)</label>
+            <label className="label" htmlFor="description">
+              Description (optional)
+            </label>
             <input
               id="description"
               type="text"
@@ -143,7 +181,9 @@ export default function TransactionModal({ isOpen, onClose, onSave, transaction 
           </div>
 
           <div>
-            <label className="label" htmlFor="date">Date</label>
+            <label className="label" htmlFor="date">
+              Date
+            </label>
             <input
               id="date"
               type="date"
@@ -155,12 +195,35 @@ export default function TransactionModal({ isOpen, onClose, onSave, transaction 
             />
           </div>
 
+          <div>
+            <label className="tx-modal__keep-open">
+              <input
+                type="checkbox"
+                checked={keepOpen}
+                onChange={(e) => setKeepOpen(e.target.checked)}
+              />
+              Keep open after saving
+            </label>
+          </div>
+
           <div className="tx-modal__actions">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-secondary flex-1"
+            >
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="btn-primary flex-1">
-              {loading ? 'Saving...' : transaction ? 'Save Changes' : 'Add Transaction'}
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary flex-1"
+            >
+              {loading
+                ? "Saving..."
+                : transaction
+                  ? "Save Changes"
+                  : "Add Transaction"}
             </button>
           </div>
         </form>

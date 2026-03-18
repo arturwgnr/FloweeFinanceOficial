@@ -4,6 +4,7 @@ import api from "../services/api";
 import IncomeExpenseChart from "../components/Charts/IncomeExpenseChart";
 import ExpensesPieChart from "../components/Charts/ExpensesPieChart";
 import InsightsBlock from "../components/InsightsBlock";
+import TransactionModal from "../components/TransactionModal";
 import "../styles/pages/Dashboard.css";
 
 function StatCard({ label, value, icon, color }) {
@@ -21,17 +22,38 @@ function StatCard({ label, value, icon, color }) {
 export default function Dashboard() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const now = new Date();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
 
+  const [modalOpen, setModalOpen] = useState(false);
+
+  function refreshData() {
+    setLoading(true);
+    Promise.all([
+      api.get(`/transactions?year=${currentYear}`),
+      api.get(`/transactions`),
+    ])
+      .then(([yearRes, allRes]) => {
+        setTransactions(yearRes.data.transactions || []);
+        setAllTransactions(allRes.data.transactions || []);
+      })
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
+  }
+
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await api.get(`/transactions?year=${currentYear}`);
-        setTransactions(res.data.transactions || []);
+        const [yearRes, allRes] = await Promise.all([
+          api.get(`/transactions?year=${currentYear}`),
+          api.get(`/transactions`),
+        ]);
+        setTransactions(yearRes.data.transactions || []);
+        setAllTransactions(allRes.data.transactions || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -40,6 +62,16 @@ export default function Dashboard() {
     }
     fetchData();
   }, [currentYear]);
+
+  const allTimeBalance = useMemo(() => {
+    const income = allTransactions
+      .filter((t) => t.type === "INCOME")
+      .reduce((s, t) => s + t.amount, 0);
+    const expenses = allTransactions
+      .filter((t) => t.type === "EXPENSE")
+      .reduce((s, t) => s + t.amount, 0);
+    return income - expenses;
+  }, [allTransactions]);
 
   const monthStats = useMemo(() => {
     const thisMonth = transactions.filter((t) => {
@@ -54,7 +86,7 @@ export default function Dashboard() {
     const expenses = thisMonth
       .filter((t) => t.type === "EXPENSE")
       .reduce((s, t) => s + t.amount, 0);
-    return { income, expenses, balance: income - expenses };
+    return { income, expenses };
   }, [transactions, currentMonth, currentYear]);
 
   const lineChartData = useMemo(() => {
@@ -111,23 +143,30 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard">
-      <div>
-        <h1 className="dashboard__greeting">
-          Good{" "}
-          {now.getHours() < 12
-            ? "morning"
-            : now.getHours() < 18
-              ? "afternoon"
-              : "evening"}
-          , {user?.name?.split(" ")[0]} 👋
-        </h1>
-        <p className="dashboard__subtitle">
-          Here's your financial overview for{" "}
-          {now.toLocaleString("default", { month: "long", year: "numeric" })}
-        </p>
+      <div className="header-div">
+        <div className="header-right">
+          <h1 className="dashboard__greeting">
+            Good{" "}
+            {now.getHours() < 12
+              ? "morning"
+              : now.getHours() < 18
+                ? "afternoon"
+                : "evening"}
+            , {user?.name?.split(" ")[0]} 👋
+          </h1>
+          <p className="dashboard__subtitle">
+            Here's your financial overview for{" "}
+            {now.toLocaleString("default", { month: "long", year: "numeric" })}
+          </p>
+        </div>
 
-        <div className="dashboard-right">
-          <button>Add Transaction</button>
+        <div className="header-left">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="btn-primary flex items-center gap-2"
+          >
+            Add Transaction
+          </button>
         </div>
       </div>
 
@@ -135,7 +174,7 @@ export default function Dashboard() {
       <div className="dashboard__stats">
         <StatCard
           label="Current Balance"
-          value={loading ? "..." : fmt(monthStats.balance)}
+          value={loading ? "..." : fmt(allTimeBalance)}
           icon="💰"
           color="bg-primary-light"
         />
@@ -181,6 +220,12 @@ export default function Dashboard() {
 
       {/* AI Insights */}
       <InsightsBlock />
+      <TransactionModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={refreshData}
+        transaction={null}
+      />
     </div>
   );
 }

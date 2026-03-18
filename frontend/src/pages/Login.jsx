@@ -46,12 +46,14 @@ export default function Login() {
         </div>
 
         <div className="card">
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">
-            Welcome back
-          </h1>
-          <p className="text-gray-500 text-sm mb-6">
-            Sign in to your account to continue
-          </p>
+          <div className="center-card">
+            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+              Welcome back
+            </h1>
+            <p className="text-gray-500 text-sm mb-6">
+              Sign in to your account to continue
+            </p>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
