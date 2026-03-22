@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import '../styles/components/GoalCard.css';
 
 export default function GoalCard({ goal, onUpdate, onDelete }) {
+  const { currencySymbol } = useAuth();
   const { id, name, targetAmount, currentAmount, deadline } = goal;
   const pct = targetAmount > 0 ? Math.min((currentAmount / targetAmount) * 100, 100) : 0;
   const isComplete = currentAmount >= targetAmount;
@@ -57,8 +59,8 @@ export default function GoalCard({ goal, onUpdate, onDelete }) {
       {/* Progress */}
       <div className="goal-card__progress-section">
         <div className="goal-card__progress-labels">
-          <span>${currentAmount.toFixed(2)} saved</span>
-          <span>Goal: ${targetAmount.toFixed(2)}</span>
+          <span>{currencySymbol}{currentAmount.toFixed(2)} saved</span>
+          <span>Goal: {currencySymbol}{targetAmount.toFixed(2)}</span>
         </div>
         <div className="goal-card__progress-track">
           <div

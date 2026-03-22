@@ -2,22 +2,9 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-const VALID_CATEGORIES = [
-  "Food",
-  "Supermarket",
-  "Transport",
-  "Housing",
-  "Health",
-  "Entertainment",
-  "Shopping",
-  "Education",
-  "Travel",
-  "Loan",
-  "Other",
-];
 async function list(req, res) {
   try {
-    const { month, year, type, category } = req.query;
+    const { month, year, type, category, excludeFuture, sortBy } = req.query;
     const where = { userId: req.userId };
 
     if (type) where.type = type;
@@ -38,9 +25,15 @@ async function list(req, res) {
       };
     }
 
+    if (excludeFuture === "true") {
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+      where.date = { ...where.date, lte: endOfToday };
+    }
+
     const transactions = await prisma.transaction.findMany({
       where,
-      orderBy: { date: "desc" },
+      orderBy: sortBy === "createdAt" ? { createdAt: "desc" } : { date: "desc" },
     });
     res.json({ transactions });
   } catch (err) {
@@ -60,10 +53,6 @@ async function create(req, res) {
     if (!["INCOME", "EXPENSE"].includes(type)) {
       return res.status(400).json({ error: "type must be INCOME or EXPENSE" });
     }
-    if (!VALID_CATEGORIES.includes(category)) {
-      return res.status(400).json({ error: "Invalid category" });
-    }
-
     const [y, m, d] = date.split("-").map(Number);
     const parsedDate = new Date(y, m - 1, d);
     const isRecurring = !!recurring;

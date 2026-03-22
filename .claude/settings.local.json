@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(cd \"C:/Users/User/Desktop/Artur Wagner/Software Engineer/VibeCode/FloweeFinance/frontend\" && npm install react-hot-toast)",
-      "Bash(cd \"C:/Users/User/Desktop/Artur Wagner/Software Engineer/VibeCode/FloweeFinance/frontend\" && npm run build 2>&1)"
+      "Bash(cd \"C:/Users/User/Desktop/Artur Wagner/Software Engineer/VibeCode/FloweeFinance/frontend\" && npm run build 2>&1)",
+      "Bash(find 'C:\\\\Users\\\\User\\\\Desktop\\\\Artur Wagner\\\\Software Engineer\\\\VibeCode\\\\FloweeFinance\\\\frontend' -type f -name *Auth* -o -name *auth*)",
+      "Bash(npx prisma:*)"
     ]
   }
 }

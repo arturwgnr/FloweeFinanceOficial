@@ -7,8 +7,8 @@ and /backend (Node.js + Express + Prisma + PostgreSQL).
 
 ## Tech Stack
 
-- Backend: Node.js, Express, Prisma, PostgreSQL (local), JWT auth
-- Frontend: React (Vite), TailwindCSS, Recharts
+- Backend: Node.js, Express, Prisma, PostgreSQL (local via Docker), JWT auth
+- Frontend: React (Vite), plain CSS (no Tailwind), Recharts
 - AI: Google Gemini API (free tier)
 - No TypeScript — plain JavaScript only
 
@@ -24,18 +24,27 @@ and /backend (Node.js + Express + Prisma + PostgreSQL).
 [x] Landing page
 [x] Auth (register/login JWT)
 [x] Dashboard with charts
-[x] Transactions (CRUD)
+[x] Transactions (CRUD + recurring monthly)
 [x] Budgets
 [x] Goals
 [x] AI Insights (Gemini)
+[ ] Profile page
+[ ] Currency preference (USD, EUR, BRL)
+[ ] Monthly budget widget on dashboard
+[ ] Background blur when modals open
+[ ] Landing page premium upgrade
+[ ] Dashboard emoji → SVG icons
+[ ] Recent transactions on dashboard
 
 ## Key Conventions
 
 - JWT stored in localStorage
 - All /api/_ routes except /api/auth/_ require auth middleware
-- Categories are predefined: Food, Transport, Housing, Health,
-  Entertainment, Shopping, Education, Other
+- Categories: Food, Supermarket, Transport, Housing, Health,
+  Entertainment, Shopping, Education, Travel, Other
 - Charts use Recharts
+- CSS follows BEM naming: block\_\_element--modifier
+- All styles in /frontend/src/styles — no Tailwind, no inline styles
 - API calls via axios instance in /frontend/src/services/api.js
 
 ## Environment Variables (backend .env)

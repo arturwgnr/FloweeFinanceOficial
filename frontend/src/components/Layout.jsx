@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
-import Sidebar from './Sidebar';
-import Navbar from './Navbar';
-import '../styles/components/Layout.css';
+import React, { useState } from "react";
+import { Outlet } from "react-router-dom";
+import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
+import { useModal } from "../context/ModalContext";
+import "../styles/components/Layout.css";
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isAnyModalOpen } = useModal();
 
   return (
     <div className="layout">
@@ -19,13 +21,15 @@ export default function Layout() {
 
       {/* Sidebar */}
       <aside
-        className={`layout__sidebar ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`layout__sidebar ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
       </aside>
 
       {/* Main content */}
-      <div className="layout__content">
+      <div
+        className={`layout__content${isAnyModalOpen ? " layout__content--blurred" : ""}`}
+      >
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <main className="layout__main">
           <Outlet />

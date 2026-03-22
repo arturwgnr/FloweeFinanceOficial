@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 import TransactionModal from "../components/TransactionModal";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import "../styles/pages/Transactions.css";
 
 const CATEGORIES = [
@@ -17,6 +19,7 @@ const CATEGORIES = [
 ];
 
 function TransactionRow({ transaction, onEdit, onDelete }) {
+  const { currencySymbol } = useAuth();
   const isIncome = transaction.type === "INCOME";
   const date = new Date(transaction.date);
 
@@ -46,7 +49,7 @@ function TransactionRow({ transaction, onEdit, onDelete }) {
         <span
           className={`font-semibold text-sm ${isIncome ? "text-green-600" : "text-red-500"}`}
         >
-          {isIncome ? "+" : "-"}${transaction.amount.toFixed(2)}
+          {isIncome ? "+" : "-"}{currencySymbol}{transaction.amount.toFixed(2)}
         </span>
         <button
           onClick={() => onEdit(transaction)}
@@ -94,6 +97,8 @@ export default function Transactions() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const now = new Date();
   const [filters, setFilters] = useState({
@@ -101,6 +106,7 @@ export default function Transactions() {
     year: String(now.getFullYear()),
     type: "",
     category: "",
+    sortBy: "date",
   });
 
   const fetchTransactions = useCallback(async () => {
@@ -112,6 +118,7 @@ export default function Transactions() {
       if (filters.type) params.append("type", filters.type);
       if (filters.category && filters.category !== "All")
         params.append("category", filters.category);
+      if (filters.sortBy) params.append("sortBy", filters.sortBy);
       const res = await api.get(`/transactions?${params}`);
       setTransactions(res.data.transactions || []);
     } catch (err) {
@@ -135,13 +142,21 @@ export default function Transactions() {
     setModalOpen(true);
   }
 
-  async function handleDelete(id) {
+  function handleDelete(id) {
+    setDeleteId(id);
+  }
+
+  async function confirmDelete() {
+    setDeleteLoading(true);
     try {
-      await api.delete(`/transactions/${id}`);
+      await api.delete(`/transactions/${deleteId}`);
       toast.success("Transaction deleted");
+      setDeleteId(null);
       fetchTransactions();
     } catch (err) {
       toast.error("Failed to delete transaction");
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -230,6 +245,16 @@ export default function Transactions() {
               </option>
             ))}
           </select>
+          <select
+            value={filters.sortBy}
+            onChange={(e) =>
+              setFilters((p) => ({ ...p, sortBy: e.target.value }))
+            }
+            className="input w-auto"
+          >
+            <option value="date">Date</option>
+            <option value="createdAt">Recently Added</option>
+          </select>
         </div>
       </div>
 
@@ -266,6 +291,13 @@ export default function Transactions() {
         onClose={() => setModalOpen(false)}
         onSave={fetchTransactions}
         transaction={editingTx}
+      />
+
+      <DeleteConfirmModal
+        isOpen={!!deleteId}
+        onCancel={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
       />
     </div>
   );

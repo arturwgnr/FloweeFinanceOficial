@@ -1,4 +1,5 @@
 import React from "react";
+import { useAuth } from "../context/AuthContext";
 import "../styles/components/BudgetCard.css";
 
 const CATEGORY_ICONS = {
@@ -14,6 +15,7 @@ const CATEGORY_ICONS = {
 };
 
 export default function BudgetCard({ budget, onDelete }) {
+  const { currencySymbol } = useAuth();
   const { category, monthlyLimit, spent } = budget;
   const pct =
     monthlyLimit > 0 ? Math.min((spent / monthlyLimit) * 100, 100) : 0;
@@ -74,12 +76,12 @@ export default function BudgetCard({ budget, onDelete }) {
         <div className="budget-card__progress-labels">
           <span>
             Spent:{" "}
-            <strong className="text-gray-700">${spent.toFixed(2)}</strong>
+            <strong className="text-gray-700">{currencySymbol}{spent.toFixed(2)}</strong>
           </span>
           <span>
             Limit:{" "}
             <strong className="text-gray-700">
-              ${monthlyLimit.toFixed(2)}
+              {currencySymbol}{monthlyLimit.toFixed(2)}
             </strong>
           </span>
         </div>
@@ -94,10 +96,10 @@ export default function BudgetCard({ budget, onDelete }) {
       <div className="budget-card__footer">
         <span className={`text-sm font-medium ${statusColor}`}>
           {isOver
-            ? `Over budget by $${(spent - monthlyLimit).toFixed(2)}`
+            ? `Over budget by ${currencySymbol}${(spent - monthlyLimit).toFixed(2)}`
             : pct >= 80
               ? `⚠️ Almost at limit`
-              : `$${remaining.toFixed(2)} remaining`}
+              : `${currencySymbol}${remaining.toFixed(2)} remaining`}
         </span>
         <span className="budget-card__pct">{pct.toFixed(0)}%</span>
       </div>

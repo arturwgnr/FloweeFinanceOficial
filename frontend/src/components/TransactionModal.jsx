@@ -1,21 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import { useModal } from "../context/ModalContext";
 import "../styles/components/TransactionModal.css";
-
-const CATEGORIES = [
-  "Food",
-  "Supermarket",
-  "Transport",
-  "Housing",
-  "Health",
-  "Entertainment",
-  "Shopping",
-  "Education",
-  "Travel",
-  "Loan",
-  "Other",
-];
 
 const defaultForm = {
   amount: "",
@@ -31,9 +19,37 @@ export default function TransactionModal({
   onSave,
   transaction,
 }) {
+  const { pushModal, popModal } = useModal();
   const [form, setForm] = useState(defaultForm);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [categories, setCategories] = useState({ EXPENSE: [], INCOME: [] });
+  const [catsLoading, setCatsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      pushModal();
+      return () => popModal();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCatsLoading(true);
+    api.get("/categories")
+      .then((res) => {
+        const cats = res.data.categories || { EXPENSE: [], INCOME: [] };
+        setCategories(cats);
+        if (!transaction) {
+          setForm((prev) => {
+            const first = cats[prev.type]?.[0]?.name;
+            return first ? { ...prev, category: first } : prev;
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCatsLoading(false));
+  }, [isOpen]);
 
   const [keepOpen, setKeepOpen] = useState(false);
   const [recurring, setRecurring] = useState(false);
@@ -111,7 +127,7 @@ export default function TransactionModal({
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <>
       <div className="tx-modal__overlay">
         <div className="tx-modal__box">
@@ -147,7 +163,10 @@ export default function TransactionModal({
                   <button
                     key={t}
                     type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, type: t }))}
+                    onClick={() => {
+                      const firstCat = categories[t]?.[0]?.name || "";
+                      setForm((prev) => ({ ...prev, type: t, category: firstCat }));
+                    }}
                     className={`tx-modal__type-btn ${
                       form.type === t
                         ? t === "INCOME"
@@ -190,10 +209,11 @@ export default function TransactionModal({
                 value={form.category}
                 onChange={handleChange}
                 className="input"
+                disabled={catsLoading}
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {(categories[form.type] || []).map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name}
                   </option>
                 ))}
               </select>
@@ -302,6 +322,7 @@ export default function TransactionModal({
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }

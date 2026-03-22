@@ -3,6 +3,8 @@ import api from '../services/api';
 
 const AuthContext = createContext(null);
 
+const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', BRL: 'R$' };
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem('token'));
@@ -36,8 +38,14 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  function updateUser(data) {
+    setUser((prev) => (prev ? { ...prev, ...data } : prev));
+  }
+
+  const currencySymbol = user ? (CURRENCY_SYMBOLS[user.preferredCurrency] || '$') : '$';
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser, currencySymbol }}>
       {children}
     </AuthContext.Provider>
   );

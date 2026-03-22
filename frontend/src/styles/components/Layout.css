@@ -52,3 +52,9 @@
   overflow-y: auto;
   padding: 1.5rem;
 }
+
+.layout__content--blurred {
+  filter: blur(6px);
+  pointer-events: none;
+  transition: filter 200ms;
+}
