@@ -18,6 +18,12 @@
   }
 }
 
+.layout__overlay--ipad {
+  display: block;
+  z-index: 25;
+}
+
+/* Mobile sidebar: hidden by default, shown via JS class */
 .layout__sidebar {
   position: fixed;
   top: 0;
@@ -28,15 +34,36 @@
   background-color: #ffffff;
   border-right: 1px solid #f3f4f6;
   transform: translateX(-100%);
-  transition: transform 200ms;
+  transition: transform 200ms, width 200ms;
 }
 
+.layout__sidebar--mobile-open {
+  transform: translateX(0);
+}
+
+/* Desktop: always visible full sidebar */
 @media (min-width: 1024px) {
   .layout__sidebar {
     position: relative;
     transform: translateX(0);
     flex-shrink: 0;
   }
+}
+
+/* iPad: collapsed icon-only sidebar, always visible */
+.layout__sidebar--ipad {
+  position: relative;
+  transform: translateX(0);
+  flex-shrink: 0;
+  width: 4.5rem;
+  z-index: auto;
+  transition: width 200ms ease;
+}
+
+.layout__sidebar--ipad-expanded {
+  position: fixed;
+  width: 16rem;
+  z-index: 30;
 }
 
 .layout__content {

@@ -34,17 +34,56 @@ async function list(req, res) {
     const transactions = await prisma.transaction.findMany({
       where,
       orderBy: sortBy === "createdAt" ? { createdAt: "desc" } : { date: "desc" },
+      include: {
+        transactionTags: {
+          include: { tag: { select: { id: true, name: true } } },
+        },
+      },
     });
-    res.json({ transactions });
+
+    const result = transactions.map((t) => ({
+      ...t,
+      tags: t.transactionTags.map((tt) => tt.tag),
+      transactionTags: undefined,
+    }));
+
+    res.json({ transactions: result });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 }
 
+async function applyTags(transactionId, userId, tagNames) {
+  if (!Array.isArray(tagNames) || tagNames.length === 0) return;
+
+  const cleanNames = tagNames
+    .map((n) => String(n).trim())
+    .filter((n) => n.length > 0);
+
+  if (cleanNames.length === 0) return;
+
+  // Upsert each tag for this user
+  const tags = await Promise.all(
+    cleanNames.map((name) =>
+      prisma.tag.upsert({
+        where: { userId_name: { userId, name } },
+        update: {},
+        create: { userId, name },
+      })
+    )
+  );
+
+  // Create TransactionTag entries (ignore duplicates)
+  await prisma.transactionTag.createMany({
+    data: tags.map((tag) => ({ transactionId, tagId: tag.id })),
+    skipDuplicates: true,
+  });
+}
+
 async function create(req, res) {
   try {
-    const { amount, type, category, description, date, recurring } = req.body;
+    const { amount, type, category, description, date, recurring, tagNames } = req.body;
     if (!amount || !type || !category || !date) {
       return res
         .status(400)
@@ -70,6 +109,8 @@ async function create(req, res) {
       },
     });
 
+    await applyTags(transaction.id, req.userId, tagNames);
+
     if (isRecurring && m < 12) {
       const futureEntries = [];
       for (let futureMonth = m + 1; futureMonth <= 12; futureMonth++) {
@@ -86,7 +127,9 @@ async function create(req, res) {
           recurringDay: d,
         });
       }
-      await prisma.transaction.createMany({ data: futureEntries });
+      if (futureEntries.length > 0) {
+        await prisma.transaction.createMany({ data: futureEntries });
+      }
     }
 
     res.status(201).json({ transaction });
@@ -105,7 +148,7 @@ async function update(req, res) {
     if (!existing)
       return res.status(404).json({ error: "Transaction not found" });
 
-    const { amount, type, category, description, date } = req.body;
+    const { amount, type, category, description, date, tagNames } = req.body;
     const data = {};
     if (amount !== undefined) data.amount = parseFloat(amount);
     if (type !== undefined) data.type = type;
@@ -120,6 +163,13 @@ async function update(req, res) {
       where: { id },
       data,
     });
+
+    // Replace tags if tagNames provided
+    if (Array.isArray(tagNames)) {
+      await prisma.transactionTag.deleteMany({ where: { transactionId: id } });
+      await applyTags(id, req.userId, tagNames);
+    }
+
     res.json({ transaction });
   } catch (err) {
     console.error(err);

@@ -4,7 +4,9 @@
       "Bash(cd \"C:/Users/User/Desktop/Artur Wagner/Software Engineer/VibeCode/FloweeFinance/frontend\" && npm install react-hot-toast)",
       "Bash(cd \"C:/Users/User/Desktop/Artur Wagner/Software Engineer/VibeCode/FloweeFinance/frontend\" && npm run build 2>&1)",
       "Bash(find 'C:\\\\Users\\\\User\\\\Desktop\\\\Artur Wagner\\\\Software Engineer\\\\VibeCode\\\\FloweeFinance\\\\frontend' -type f -name *Auth* -o -name *auth*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(node -e \"const p = require\\(''./src/controllers/profileController''\\); console.log\\(Object.keys\\(p\\)\\);\")",
+      "Bash(node -e \"const t = require\\(''./src/controllers/tagsController''\\); console.log\\(Object.keys\\(t\\)\\);\")"
     ]
   }
 }

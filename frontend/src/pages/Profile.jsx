@@ -142,6 +142,205 @@ function CategorySection({ type, label, categories, onAdd, onRename, onDelete })
   );
 }
 
+function ChangePasswordSection() {
+  const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  function handleChange(e) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    if (form.newPassword !== form.confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+    if (form.newPassword.length < 6) {
+      setError('New password must be at least 6 characters');
+      return;
+    }
+    setLoading(true);
+    try {
+      await api.put('/profile/password', {
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
+      });
+      toast.success('Password updated');
+      setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to update password');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="profile__card card">
+      <form onSubmit={handleSubmit} className="profile__form">
+        <div className="profile__section">
+          <h2 className="profile__section-title">Change Password</h2>
+
+          {error && <div className="profile__error">{error}</div>}
+
+          <div className="profile__field">
+            <label className="label" htmlFor="currentPassword">Current Password</label>
+            <input
+              id="currentPassword"
+              type="password"
+              name="currentPassword"
+              value={form.currentPassword}
+              onChange={handleChange}
+              className="input"
+              required
+              autoComplete="current-password"
+            />
+          </div>
+
+          <div className="profile__field">
+            <label className="label" htmlFor="newPassword">New Password</label>
+            <input
+              id="newPassword"
+              type="password"
+              name="newPassword"
+              value={form.newPassword}
+              onChange={handleChange}
+              className="input"
+              required
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div className="profile__field">
+            <label className="label" htmlFor="confirmPassword">Confirm New Password</label>
+            <input
+              id="confirmPassword"
+              type="password"
+              name="confirmPassword"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              className="input"
+              required
+              autoComplete="new-password"
+            />
+          </div>
+        </div>
+
+        <div className="profile__actions">
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? 'Updating...' : 'Update Password'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function TagsSummarySection() {
+  const { user } = useAuth();
+  const [tags, setTags] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/tags')
+      .then((res) => setTags(res.data.tags || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  function fmt(n) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: user?.preferredCurrency || 'USD',
+      maximumFractionDigits: 2,
+    }).format(n);
+  }
+
+  const incomeTags = tags.filter((t) => t.income.count > 0);
+  const expenseTags = tags.filter((t) => t.expense.count > 0);
+
+  if (loading) {
+    return (
+      <div className="profile__card card">
+        <div className="profile__section">
+          <h2 className="profile__section-title">Transaction Tags</h2>
+          <div className="profile__tags-loading"><div className="spinner spinner--sm" /></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tags.length === 0) {
+    return (
+      <div className="profile__card card">
+        <div className="profile__section">
+          <h2 className="profile__section-title">Transaction Tags</h2>
+          <p className="profile__category-empty">No tags yet. Add tags when creating transactions.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="profile__card card">
+      <div className="profile__section">
+        <h2 className="profile__section-title">Transaction Tags</h2>
+        <p className="profile__field-hint">Tags let you track totals across transactions regardless of category.</p>
+
+        {expenseTags.length > 0 && (
+          <div className="profile__tags-group">
+            <h3 className="profile__tags-group-title">Expense Tags</h3>
+            <table className="profile__tags-table">
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Transactions</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenseTags.map((tag) => (
+                  <tr key={tag.id} className="profile__tag-row">
+                    <td className="profile__tag-name">{tag.name}</td>
+                    <td className="profile__tag-count">{tag.expense.count}</td>
+                    <td className="profile__tag-total profile__tag-total--expense">{fmt(tag.expense.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {incomeTags.length > 0 && (
+          <div className="profile__tags-group">
+            <h3 className="profile__tags-group-title">Income Tags</h3>
+            <table className="profile__tags-table">
+              <thead>
+                <tr>
+                  <th>Tag</th>
+                  <th>Transactions</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {incomeTags.map((tag) => (
+                  <tr key={tag.id} className="profile__tag-row">
+                    <td className="profile__tag-name">{tag.name}</td>
+                    <td className="profile__tag-count">{tag.income.count}</td>
+                    <td className="profile__tag-total profile__tag-total--income">{fmt(tag.income.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const [form, setForm] = useState({
@@ -312,6 +511,8 @@ export default function Profile() {
         </form>
       </div>
 
+      <ChangePasswordSection />
+
       <CategorySection
         type="EXPENSE"
         label="Expense Categories"
@@ -329,6 +530,8 @@ export default function Profile() {
         onRename={handleRenameCategory}
         onDelete={handleDeleteCategory}
       />
+
+      <TagsSummarySection />
     </div>
   );
 }

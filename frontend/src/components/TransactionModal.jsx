@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 import api from "../services/api";
@@ -26,6 +26,14 @@ export default function TransactionModal({
   const [categories, setCategories] = useState({ EXPENSE: [], INCOME: [] });
   const [catsLoading, setCatsLoading] = useState(false);
 
+  // Tags state
+  const [tagNames, setTagNames] = useState([]);
+  const [tagInput, setTagInput] = useState("");
+  const [allTags, setAllTags] = useState([]);
+  const [tagSuggestions, setTagSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const tagInputRef = useRef(null);
+
   useEffect(() => {
     if (isOpen) {
       pushModal();
@@ -36,10 +44,14 @@ export default function TransactionModal({
   useEffect(() => {
     if (!isOpen) return;
     setCatsLoading(true);
-    api.get("/categories")
-      .then((res) => {
-        const cats = res.data.categories || { EXPENSE: [], INCOME: [] };
+    Promise.all([
+      api.get("/categories"),
+      api.get("/tags"),
+    ])
+      .then(([catsRes, tagsRes]) => {
+        const cats = catsRes.data.categories || { EXPENSE: [], INCOME: [] };
         setCategories(cats);
+        setAllTags(tagsRes.data.tags || []);
         if (!transaction) {
           setForm((prev) => {
             const first = cats[prev.type]?.[0]?.name;
@@ -64,16 +76,61 @@ export default function TransactionModal({
         description: transaction.description || "",
         date: new Date(transaction.date).toISOString().split("T")[0],
       });
+      setTagNames(transaction.tags ? transaction.tags.map((t) => t.name) : []);
     } else {
       setForm(defaultForm);
+      setTagNames([]);
     }
     setError("");
     setRecurring(false);
     setConfirmOpen(false);
+    setTagInput("");
+    setShowSuggestions(false);
   }, [transaction, isOpen]);
 
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function handleTagInputChange(e) {
+    const val = e.target.value;
+    setTagInput(val);
+    if (val.trim().length > 0) {
+      const q = val.trim().toLowerCase();
+      const filtered = allTags.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) &&
+          !tagNames.includes(t.name)
+      );
+      setTagSuggestions(filtered.slice(0, 6));
+      setShowSuggestions(filtered.length > 0);
+    } else {
+      setTagSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }
+
+  function addTag(name) {
+    const trimmed = name.trim();
+    if (!trimmed || tagNames.includes(trimmed)) return;
+    setTagNames((prev) => [...prev, trimmed]);
+    setTagInput("");
+    setTagSuggestions([]);
+    setShowSuggestions(false);
+    tagInputRef.current?.focus();
+  }
+
+  function handleTagKeyDown(e) {
+    if ((e.key === "Enter" || e.key === ",") && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput);
+    } else if (e.key === "Backspace" && tagInput === "" && tagNames.length > 0) {
+      setTagNames((prev) => prev.slice(0, -1));
+    }
+  }
+
+  function removeTag(name) {
+    setTagNames((prev) => prev.filter((t) => t !== name));
   }
 
   async function submitTransaction() {
@@ -81,10 +138,10 @@ export default function TransactionModal({
     setLoading(true);
     try {
       if (transaction?.id) {
-        await api.put(`/transactions/${transaction.id}`, form);
+        await api.put(`/transactions/${transaction.id}`, { ...form, tagNames });
         toast.success("Transaction updated");
       } else {
-        await api.post("/transactions", { ...form, recurring });
+        await api.post("/transactions", { ...form, recurring, tagNames });
         toast.success(
           recurring ? "Recurring transactions added" : "Transaction added",
         );
@@ -95,6 +152,7 @@ export default function TransactionModal({
         category: prev.category,
         date: prev.date,
       }));
+      setTagNames([]);
 
       onSave();
       if (!keepOpen) onClose();
@@ -232,6 +290,50 @@ export default function TransactionModal({
                 className="input"
                 placeholder="e.g. Grocery shopping"
               />
+            </div>
+
+            {/* Tags field */}
+            <div className="tx-modal__tags-area">
+              <label className="label">Tags (optional)</label>
+              <div className="tx-modal__tag-chips-input" onClick={() => tagInputRef.current?.focus()}>
+                {tagNames.map((name) => (
+                  <span key={name} className="tx-modal__chip">
+                    {name}
+                    <button
+                      type="button"
+                      className="tx-modal__chip-remove"
+                      onClick={(e) => { e.stopPropagation(); removeTag(name); }}
+                      aria-label={`Remove tag ${name}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  className="tx-modal__tag-input"
+                  value={tagInput}
+                  onChange={handleTagInputChange}
+                  onKeyDown={handleTagKeyDown}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  placeholder={tagNames.length === 0 ? "Add tags..." : ""}
+                />
+              </div>
+              {showSuggestions && (
+                <ul className="tx-modal__tag-suggestions">
+                  {tagSuggestions.map((tag) => (
+                    <li
+                      key={tag.id}
+                      className="tx-modal__tag-suggestion-item"
+                      onMouseDown={() => addTag(tag.name)}
+                    >
+                      {tag.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="tx-modal__tag-hint">Press Enter or comma to add a tag</p>
             </div>
 
             <div>
