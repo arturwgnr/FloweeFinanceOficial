@@ -9,6 +9,7 @@ import Transactions from './pages/Transactions';
 import Budgets from './pages/Budgets';
 import Goals from './pages/Goals';
 import Profile from './pages/Profile';
+import Marked from './pages/Marked';
 import Layout from './components/Layout';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/budgets" element={<Budgets />} />
           <Route path="/goals" element={<Goals />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/marked" element={<Marked />} />
         </Route>
       </Route>
 

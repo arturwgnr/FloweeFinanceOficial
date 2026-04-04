@@ -1,14 +1,16 @@
 const { PrismaClient } = require("@prisma/client");
+const { randomUUID } = require("crypto");
 
 const prisma = new PrismaClient();
 
 async function list(req, res) {
   try {
-    const { month, year, type, category, excludeFuture, sortBy } = req.query;
+    const { month, year, type, category, excludeFuture, sortBy, marked } = req.query;
     const where = { userId: req.userId };
 
     if (type) where.type = type;
     if (category) where.category = category;
+    if (marked === "true") where.marked = true;
 
     if (month && year) {
       const m = parseInt(month);
@@ -34,56 +36,18 @@ async function list(req, res) {
     const transactions = await prisma.transaction.findMany({
       where,
       orderBy: sortBy === "createdAt" ? { createdAt: "desc" } : { date: "desc" },
-      include: {
-        transactionTags: {
-          include: { tag: { select: { id: true, name: true } } },
-        },
-      },
     });
 
-    const result = transactions.map((t) => ({
-      ...t,
-      tags: t.transactionTags.map((tt) => tt.tag),
-      transactionTags: undefined,
-    }));
-
-    res.json({ transactions: result });
+    res.json({ transactions });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 }
 
-async function applyTags(transactionId, userId, tagNames) {
-  if (!Array.isArray(tagNames) || tagNames.length === 0) return;
-
-  const cleanNames = tagNames
-    .map((n) => String(n).trim())
-    .filter((n) => n.length > 0);
-
-  if (cleanNames.length === 0) return;
-
-  // Upsert each tag for this user
-  const tags = await Promise.all(
-    cleanNames.map((name) =>
-      prisma.tag.upsert({
-        where: { userId_name: { userId, name } },
-        update: {},
-        create: { userId, name },
-      })
-    )
-  );
-
-  // Create TransactionTag entries (ignore duplicates)
-  await prisma.transactionTag.createMany({
-    data: tags.map((tag) => ({ transactionId, tagId: tag.id })),
-    skipDuplicates: true,
-  });
-}
-
 async function create(req, res) {
   try {
-    const { amount, type, category, description, date, recurring, tagNames } = req.body;
+    const { amount, type, category, description, date, recurring } = req.body;
     if (!amount || !type || !category || !date) {
       return res
         .status(400)
@@ -95,6 +59,7 @@ async function create(req, res) {
     const [y, m, d] = date.split("-").map(Number);
     const parsedDate = new Date(y, m - 1, d);
     const isRecurring = !!recurring;
+    const groupId = isRecurring ? randomUUID() : null;
 
     const transaction = await prisma.transaction.create({
       data: {
@@ -106,10 +71,9 @@ async function create(req, res) {
         date: parsedDate,
         recurring: isRecurring,
         recurringDay: isRecurring ? d : null,
+        recurringGroupId: groupId,
       },
     });
-
-    await applyTags(transaction.id, req.userId, tagNames);
 
     if (isRecurring && m < 12) {
       const futureEntries = [];
@@ -125,6 +89,7 @@ async function create(req, res) {
           date: new Date(y, futureMonth - 1, adjustedDay),
           recurring: true,
           recurringDay: d,
+          recurringGroupId: groupId,
         });
       }
       if (futureEntries.length > 0) {
@@ -148,12 +113,13 @@ async function update(req, res) {
     if (!existing)
       return res.status(404).json({ error: "Transaction not found" });
 
-    const { amount, type, category, description, date, tagNames } = req.body;
+    const { amount, type, category, description, date, marked } = req.body;
     const data = {};
     if (amount !== undefined) data.amount = parseFloat(amount);
     if (type !== undefined) data.type = type;
     if (category !== undefined) data.category = category;
     if (description !== undefined) data.description = description;
+    if (marked !== undefined) data.marked = Boolean(marked);
     if (date !== undefined) {
       const [y, m, d2] = date.split("-").map(Number);
       data.date = new Date(y, m - 1, d2);
@@ -163,12 +129,6 @@ async function update(req, res) {
       where: { id },
       data,
     });
-
-    // Replace tags if tagNames provided
-    if (Array.isArray(tagNames)) {
-      await prisma.transactionTag.deleteMany({ where: { transactionId: id } });
-      await applyTags(id, req.userId, tagNames);
-    }
 
     res.json({ transaction });
   } catch (err) {
@@ -194,4 +154,25 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { list, create, update, remove };
+async function removeGroup(req, res) {
+  try {
+    const { recurringGroupId } = req.params;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    await prisma.transaction.deleteMany({
+      where: {
+        recurringGroupId,
+        userId: req.userId,
+        date: { gt: today },
+      },
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+module.exports = { list, create, update, remove, removeGroup };

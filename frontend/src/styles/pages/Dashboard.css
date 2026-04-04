@@ -444,6 +444,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.dashboard__recent-row__recurring {
+  display: inline-flex;
+  align-items: center;
+  color: #10b77f;
+  flex-shrink: 0;
 }
 
 .dashboard__recent-row__meta {

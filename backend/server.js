@@ -9,8 +9,6 @@ const goalRoutes = require('./src/routes/goals');
 const insightRoutes = require('./src/routes/insights');
 const profileRoutes = require('./src/routes/profile');
 const categoryRoutes = require('./src/routes/categories');
-const tagRoutes = require('./src/routes/tags');
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -28,7 +26,6 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/insights', insightRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/tags', tagRoutes);
 
 app.listen(PORT, () => {
   console.log(`Flowee backend running on port ${PORT}`);
