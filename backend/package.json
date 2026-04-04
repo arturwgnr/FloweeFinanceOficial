@@ -2,10 +2,13 @@
   "name": "flowee-backend",
   "version": "1.0.0",
   "main": "server.js",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "postinstall": "node node_modules/.bin/prisma generate"
+    "build": "node node_modules/prisma/build/index.js generate"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
