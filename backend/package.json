@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "generate": "npx prisma generate",
-    "postinstall": "npx prisma generate"
+    "postinstall": "node node_modules/.bin/prisma generate"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
