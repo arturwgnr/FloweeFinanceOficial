@@ -191,6 +191,24 @@
   padding: 1rem;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   border: 1px solid #f3f4f6;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .landing__hero-stat {
+    padding: 0.625rem 0.5rem;
+  }
+
+  .landing__hero-stat-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .landing__hero-stat .text-xl {
+    font-size: 0.9375rem;
+    overflow-wrap: anywhere;
+  }
 }
 
 .landing__hero-stat-label {
@@ -634,6 +652,13 @@
   flex-direction: column;
   align-items: flex-start;
   position: relative;
+}
+
+@media (max-width: 767px) {
+  .landing__step {
+    align-items: center;
+    text-align: center;
+  }
 }
 
 .landing__step-number {

@@ -165,6 +165,11 @@
   flex: 1;
 }
 
+.profile__budget-amount-input {
+  width: 6rem;
+  flex: none;
+}
+
 .profile__category-empty {
   font-size: 0.875rem;
   color: #9ca3af;

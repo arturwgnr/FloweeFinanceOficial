@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -125,6 +125,153 @@ function CategorySection({ type, label, categories, onAdd, onRename, onDelete })
             type="button"
             onClick={handleAdd}
             disabled={adding || !newName.trim()}
+            className="btn-primary"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+
+      <DeleteConfirmModal
+        isOpen={!!deletingId}
+        onCancel={() => setDeletingId(null)}
+        onConfirm={confirmDelete}
+        loading={deleteLoading}
+      />
+    </div>
+  );
+}
+
+function BudgetSection({ categories }) {
+  const { user } = useAuth();
+  const [budgets, setBudgets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const monthLabel = now.toLocaleString('default', { month: 'long' });
+
+  useEffect(() => {
+    if (!category && categories.length > 0) {
+      setCategory(categories[0].name);
+    }
+  }, [categories, category]);
+
+  const fetchBudgets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/budgets');
+      setBudgets((res.data.budgets || []).filter((b) => b.month === month && b.year === year));
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  }, [month, year]);
+
+  useEffect(() => {
+    fetchBudgets();
+  }, [fetchBudgets]);
+
+  function fmt(n) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: user?.preferredCurrency || 'USD',
+      maximumFractionDigits: 2,
+    }).format(n);
+  }
+
+  async function handleAdd() {
+    if (!category || !amount || parseFloat(amount) <= 0) return;
+    setAdding(true);
+    try {
+      await api.post('/budgets', { category, monthlyLimit: amount, month, year });
+      setAmount('');
+      await fetchBudgets();
+      toast.success('Budget saved');
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save budget');
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function confirmDelete() {
+    setDeleteLoading(true);
+    try {
+      await api.delete(`/budgets/${deletingId}`);
+      setDeletingId(null);
+      await fetchBudgets();
+      toast.success('Budget deleted');
+    } catch {
+      toast.error('Failed to delete budget');
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  return (
+    <div className="profile__card card">
+      <div className="profile__section">
+        <h2 className="profile__section-title">Budgets</h2>
+        <p className="profile__field-hint">Set a monthly spending limit per category for {monthLabel} {year}.</p>
+
+        {loading ? (
+          <div className="profile__tags-loading"><div className="spinner spinner--sm" /></div>
+        ) : (
+          <ul className="profile__category-list">
+            {budgets.map((b) => (
+              <li key={b.id} className="profile__category-item">
+                <span className="profile__category-item__name">{b.category} — {fmt(b.monthlyLimit)}</span>
+                <div className="profile__category-item__actions">
+                  <button
+                    type="button"
+                    onClick={() => setDeletingId(b.id)}
+                    className="profile__category-btn profile__category-btn--delete"
+                    aria-label="Delete budget"
+                  >
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </li>
+            ))}
+            {budgets.length === 0 && (
+              <li className="profile__category-empty">No budgets set for this month yet.</li>
+            )}
+          </ul>
+        )}
+
+        <div className="profile__category-add-row">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="input profile__category-add-input"
+          >
+            {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+          </select>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
+            className="input profile__budget-amount-input"
+            placeholder="Limit"
+            min="1"
+            step="0.01"
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={adding || !category || !amount}
             className="btn-primary"
           >
             Add
@@ -512,6 +659,8 @@ export default function Profile() {
       </div>
 
       <ChangePasswordSection />
+
+      <BudgetSection categories={categories.EXPENSE} />
 
       <CategorySection
         type="EXPENSE"
