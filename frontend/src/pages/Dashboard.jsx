@@ -486,7 +486,11 @@ export default function Dashboard() {
 
   const budgetWidgetItems = useMemo(() => {
     return budgets
-      .filter((b) => b.month === selectedMonth && b.year === selectedYear)
+      .filter(
+        (b) =>
+          (b.month === selectedMonth && b.year === selectedYear) ||
+          (b.month == null && b.year == null)
+      )
       .map((b) => ({
         ...b,
         pct: b.monthlyLimit > 0 ? (b.spent / b.monthlyLimit) * 100 : 0,

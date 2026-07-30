@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import BudgetScopeModal from '../components/BudgetScopeModal';
 import '../styles/pages/Profile.css';
 
 function CategorySection({ type, label, categories, onAdd, onRename, onDelete }) {
@@ -151,23 +152,22 @@ function BudgetSection({ categories }) {
   const [adding, setAdding] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showScopeModal, setShowScopeModal] = useState(false);
 
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
   const monthLabel = now.toLocaleString('default', { month: 'long' });
 
-  useEffect(() => {
-    if (!category && categories.length > 0) {
-      setCategory(categories[0].name);
-    }
-  }, [categories, category]);
-
   const fetchBudgets = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get('/budgets');
-      setBudgets((res.data.budgets || []).filter((b) => b.month === month && b.year === year));
+      setBudgets(
+        (res.data.budgets || []).filter(
+          (b) => (b.month === month && b.year === year) || (b.month == null && b.year == null)
+        )
+      );
     } catch {
       // silently fail
     } finally {
@@ -187,12 +187,22 @@ function BudgetSection({ categories }) {
     }).format(n);
   }
 
-  async function handleAdd() {
+  function handleAdd() {
     if (!category || !amount || parseFloat(amount) <= 0) return;
+    setShowScopeModal(true);
+  }
+
+  async function handleConfirmScope(scope) {
     setAdding(true);
     try {
-      await api.post('/budgets', { category, monthlyLimit: amount, month, year });
+      const payload =
+        scope === 'all'
+          ? { category, monthlyLimit: amount }
+          : { category, monthlyLimit: amount, month, year };
+      await api.post('/budgets', payload);
       setAmount('');
+      setCategory('');
+      setShowScopeModal(false);
       await fetchBudgets();
       toast.success('Budget saved');
     } catch (err) {
@@ -228,7 +238,10 @@ function BudgetSection({ categories }) {
           <ul className="profile__category-list">
             {budgets.map((b) => (
               <li key={b.id} className="profile__category-item">
-                <span className="profile__category-item__name">{b.category} — {fmt(b.monthlyLimit)}</span>
+                <span className="profile__category-item__name">
+                  {b.category} — {fmt(b.monthlyLimit)}
+                  {b.month == null && ' (All months)'}
+                </span>
                 <div className="profile__category-item__actions">
                   <button
                     type="button"
@@ -256,6 +269,7 @@ function BudgetSection({ categories }) {
             onChange={(e) => setCategory(e.target.value)}
             className="input profile__category-add-input"
           >
+            <option value="" disabled>Select budget</option>
             {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
           <input
@@ -284,6 +298,13 @@ function BudgetSection({ categories }) {
         onCancel={() => setDeletingId(null)}
         onConfirm={confirmDelete}
         loading={deleteLoading}
+      />
+
+      <BudgetScopeModal
+        isOpen={showScopeModal}
+        onCancel={() => setShowScopeModal(false)}
+        onSelect={handleConfirmScope}
+        loading={adding}
       />
     </div>
   );

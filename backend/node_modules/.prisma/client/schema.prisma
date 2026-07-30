@@ -54,8 +54,8 @@ model Budget {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category     String
   monthlyLimit Float
-  month        Int
-  year         Int
+  month        Int?
+  year         Int?
   createdAt    DateTime @default(now())
 
   @@unique([userId, category, month, year])

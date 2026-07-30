@@ -9,16 +9,22 @@ async function list(req, res) {
       orderBy: [{ year: 'desc' }, { month: 'desc' }],
     });
 
+    const now = new Date();
+
     const withSpent = await Promise.all(
       budgets.map(async (budget) => {
+        // Persistent (all-months) budgets have no fixed month/year — spent is
+        // computed against the current month since the limit applies every month.
+        const spentYear = budget.year ?? now.getFullYear();
+        const spentMonth = budget.month ?? now.getMonth() + 1;
         const agg = await prisma.transaction.aggregate({
           where: {
             userId: req.userId,
             category: budget.category,
             type: 'EXPENSE',
             date: {
-              gte: new Date(budget.year, budget.month - 1, 1),
-              lt: new Date(budget.year, budget.month, 1),
+              gte: new Date(spentYear, spentMonth - 1, 1),
+              lt: new Date(spentYear, spentMonth, 1),
             },
           },
           _sum: { amount: true },
@@ -37,12 +43,16 @@ async function list(req, res) {
 async function upsert(req, res) {
   try {
     const { category, monthlyLimit, month, year } = req.body;
-    if (!category || !monthlyLimit || !month || !year) {
-      return res.status(400).json({ error: 'category, monthlyLimit, month, and year are required' });
+    if (!category || !monthlyLimit) {
+      return res.status(400).json({ error: 'category and monthlyLimit are required' });
     }
+    // A budget saved without month/year applies to all months (persistent).
+    const persistent = month == null || year == null;
+    const parsedMonth = persistent ? null : parseInt(month);
+    const parsedYear = persistent ? null : parseInt(year);
 
     const existing = await prisma.budget.findFirst({
-      where: { userId: req.userId, category, month: parseInt(month), year: parseInt(year) },
+      where: { userId: req.userId, category, month: parsedMonth, year: parsedYear },
     });
 
     let budget;
@@ -57,8 +67,8 @@ async function upsert(req, res) {
           userId: req.userId,
           category,
           monthlyLimit: parseFloat(monthlyLimit),
-          month: parseInt(month),
-          year: parseInt(year),
+          month: parsedMonth,
+          year: parsedYear,
         },
       });
     }

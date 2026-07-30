@@ -44,10 +44,11 @@ export default function BudgetCard({ budget, onDelete }) {
           <div>
             <h3 className="budget-card__name">{category}</h3>
             <p className="budget-card__date">
-              {new Date(0, budget.month - 1).toLocaleString("default", {
-                month: "long",
-              })}{" "}
-              {budget.year}
+              {budget.month == null
+                ? "All months"
+                : `${new Date(0, budget.month - 1).toLocaleString("default", {
+                    month: "long",
+                  })} ${budget.year}`}
             </p>
           </div>
         </div>

@@ -163,6 +163,7 @@
 
 .profile__category-add-input {
   flex: 1;
+  min-width: 0;
 }
 
 .profile__budget-amount-input {
@@ -256,6 +257,21 @@
 
 .profile__tag-total--expense {
   color: #dc2626;
+}
+
+/* Budget scope confirmation modal */
+.budget-scope__cancel {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 0.8125rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  align-self: center;
+}
+
+.budget-scope__cancel:hover {
+  color: #6b7280;
 }
 
 /* iPad responsive */
