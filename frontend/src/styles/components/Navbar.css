@@ -109,3 +109,115 @@
 .navbar__logout:hover {
   color: #ef4444;
 }
+
+.navbar__notifications {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.navbar__bell-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #10b77f;
+  transition: background-color 150ms;
+}
+
+.navbar__bell-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.navbar__bell-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.navbar__bell-badge {
+  position: absolute;
+  top: 0.125rem;
+  right: 0.125rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border-radius: 9999px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.navbar__notifications-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 20rem;
+  max-width: calc(100vw - 2rem);
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.navbar__notifications-header {
+  padding: 0.75rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.navbar__notifications-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 20rem;
+  overflow-y: auto;
+}
+
+.navbar__notifications-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.navbar__notifications-item:last-child {
+  border-bottom: none;
+}
+
+.navbar__notifications-message {
+  font-size: 0.8125rem;
+  color: #374151;
+  margin: 0 0 0.25rem;
+}
+
+.navbar__notifications-date {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.navbar__notifications-empty {
+  padding: 1rem;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .navbar__notifications-dropdown {
+    width: 16rem;
+  }
+}

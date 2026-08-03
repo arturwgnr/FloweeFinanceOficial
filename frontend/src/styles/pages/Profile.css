@@ -171,6 +171,27 @@
   flex: none;
 }
 
+/* Budget add row (category select + amount + button) needs to wrap
+   cleanly instead of overflowing the card on narrow viewports. */
+.profile__budget-add-row {
+  flex-wrap: wrap;
+}
+
+.profile__budget-add-row .profile__category-add-input {
+  flex: 2 1 140px;
+}
+
+.profile__budget-add-row .profile__budget-amount-input {
+  width: auto;
+  flex: 1 1 90px;
+  min-width: 70px;
+}
+
+.profile__budget-add-row .btn-primary {
+  flex: 1 1 auto;
+  white-space: nowrap;
+}
+
 .profile__category-empty {
   font-size: 0.875rem;
   color: #9ca3af;

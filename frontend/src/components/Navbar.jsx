@@ -1,7 +1,83 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Bell } from "lucide-react";
+import notifications from "../config/notifications";
 import "../styles/components/Navbar.css";
+
+const LAST_SEEN_KEY = "flowee_last_seen_notification_id";
+
+function NotificationBell() {
+  const [open, setOpen] = useState(false);
+  const [lastSeenId, setLastSeenId] = useState(
+    () => Number(localStorage.getItem(LAST_SEEN_KEY)) || 0
+  );
+  const wrapperRef = useRef(null);
+
+  const sorted = [...notifications].sort((a, b) => b.id - a.id);
+  const unseenCount = notifications.filter((n) => n.id > lastSeenId).length;
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function handleToggle() {
+    setOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        const highestId = notifications.reduce((max, n) => Math.max(max, n.id), 0);
+        localStorage.setItem(LAST_SEEN_KEY, String(highestId));
+        setLastSeenId(highestId);
+      }
+      return next;
+    });
+  }
+
+  return (
+    <div className="navbar__notifications" ref={wrapperRef}>
+      <button
+        onClick={handleToggle}
+        className="navbar__bell-btn"
+        aria-label="Notifications"
+      >
+        <Bell className="navbar__bell-icon" />
+        {unseenCount > 0 && (
+          <span className="navbar__bell-badge">{unseenCount}</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="navbar__notifications-dropdown">
+          <div className="navbar__notifications-header">Updates</div>
+          {sorted.length === 0 ? (
+            <p className="navbar__notifications-empty">No updates yet.</p>
+          ) : (
+            <ul className="navbar__notifications-list">
+              {sorted.map((n) => (
+                <li key={n.id} className="navbar__notifications-item">
+                  <p className="navbar__notifications-message">{n.message}</p>
+                  <p className="navbar__notifications-date">
+                    {new Date(n.date).toLocaleDateString("default", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Navbar({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -39,6 +115,7 @@ export default function Navbar({ onMenuClick }) {
       </div>
 
       <div className="navbar__right">
+        <NotificationBell />
         {user && (
           <div className="navbar__user">
             <div className="navbar__avatar">

@@ -263,13 +263,13 @@ function BudgetSection({ categories }) {
           </ul>
         )}
 
-        <div className="profile__category-add-row">
+        <div className="profile__category-add-row profile__budget-add-row">
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="input profile__category-add-input"
           >
-            <option value="" disabled>Select budget</option>
+            <option value="" disabled>Select category</option>
             {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
           </select>
           <input

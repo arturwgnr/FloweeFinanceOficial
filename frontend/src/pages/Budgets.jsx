@@ -4,19 +4,18 @@ import api from '../services/api';
 import BudgetCard from '../components/BudgetCard';
 import '../styles/pages/Budgets.css';
 
-const CATEGORIES = ['Food', 'Transport', 'Housing', 'Health', 'Entertainment', 'Shopping', 'Education', 'Other'];
-
 export default function Budgets() {
   const [budgets, setBudgets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formError, setFormError] = useState('');
+  const [categories, setCategories] = useState([]);
 
   const now = new Date();
   const [form, setForm] = useState({
-    category: 'Food',
+    category: '',
     monthlyLimit: '',
-    month: String(now.getMonth() + 1),
+    month: '',
     year: String(now.getFullYear()),
   });
 
@@ -32,16 +31,41 @@ export default function Budgets() {
     }
   }, []);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await api.get('/categories');
+      setCategories(res.data.categories?.EXPENSE || []);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
   useEffect(() => {
     fetchBudgets();
   }, [fetchBudgets]);
+
+  // Re-fetch categories whenever the add-budget form is opened, so
+  // categories created elsewhere in the app show up without a reload.
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories, showForm]);
+
+  useEffect(() => {
+    if (!form.category && categories.length > 0) {
+      setForm((p) => ({ ...p, category: categories[0].name }));
+    }
+  }, [categories]);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError('');
     try {
-      await api.post('/budgets', form);
-      setForm({ category: 'Food', monthlyLimit: '', month: String(now.getMonth() + 1), year: String(now.getFullYear()) });
+      const payload =
+        form.month === ''
+          ? { category: form.category, monthlyLimit: form.monthlyLimit }
+          : { category: form.category, monthlyLimit: form.monthlyLimit, month: form.month, year: form.year };
+      await api.post('/budgets', payload);
+      setForm({ category: categories[0]?.name || '', monthlyLimit: '', month: '', year: String(now.getFullYear()) });
       setShowForm(false);
       fetchBudgets();
       toast.success('Budget saved');
@@ -99,7 +123,8 @@ export default function Budgets() {
             <div>
               <label className="label">Category</label>
               <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} className="input">
-                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                <option value="" disabled>Select category</option>
+                {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
               </select>
             </div>
             <div>
@@ -118,12 +143,18 @@ export default function Budgets() {
             <div>
               <label className="label">Month</label>
               <select value={form.month} onChange={(e) => setForm((p) => ({ ...p, month: e.target.value }))} className="input">
+                <option value="">All months</option>
                 {months.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
               </select>
             </div>
             <div>
               <label className="label">Year</label>
-              <select value={form.year} onChange={(e) => setForm((p) => ({ ...p, year: e.target.value }))} className="input">
+              <select
+                value={form.year}
+                onChange={(e) => setForm((p) => ({ ...p, year: e.target.value }))}
+                className="input"
+                disabled={form.month === ''}
+              >
                 {years.map((y) => <option key={y}>{y}</option>)}
               </select>
             </div>
