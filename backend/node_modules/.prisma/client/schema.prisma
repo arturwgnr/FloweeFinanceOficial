@@ -14,6 +14,8 @@ model User {
   passwordHash      String
   preferredCurrency String        @default("USD")
   monthlyBudget     Float?
+  lastInsightText   String?
+  lastInsightDate   DateTime?
   createdAt         DateTime      @default(now())
   transactions      Transaction[]
   budgets           Budget[]
