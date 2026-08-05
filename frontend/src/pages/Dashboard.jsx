@@ -5,7 +5,6 @@ import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import IncomeExpenseChart from "../components/Charts/IncomeExpenseChart";
 import ExpensesPieChart from "../components/Charts/ExpensesPieChart";
-import InsightsBlock from "../components/InsightsBlock";
 import TransactionModal from "../components/TransactionModal";
 import DeleteConfirmModal from "../components/DeleteConfirmModal";
 import "../styles/pages/Dashboard.css";
@@ -734,105 +733,103 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Active Goals Mini Section */}
-      <div className="dashboard__goals-mini card">
-        <div className="dashboard__goals-mini__header">
-          <h3 className="dashboard__section-title">Active Goals</h3>
-          <Link to="/goals" className="dashboard__view-all">
-            View all →
-          </Link>
-        </div>
-        {loading ? (
-          <div className="dashboard__chart-loading">
-            <div className="spinner spinner--sm" />
-          </div>
-        ) : activeGoals.length === 0 ? (
-          <p className="dashboard__goals-mini__empty">
-            No active goals —{" "}
+      {/* Active Goals + Recent Transactions */}
+      <div className="dashboard__bottom-row">
+        <div className="dashboard__goals-mini card">
+          <div className="dashboard__goals-mini__header">
+            <h3 className="dashboard__section-title">Active Goals</h3>
             <Link to="/goals" className="dashboard__view-all">
-              create one in Goals
+              View all →
             </Link>
-          </p>
-        ) : (
-          <ul className="dashboard__goals-mini__list">
-            {activeGoals.map((g) => (
-              <li key={g.id} className="dashboard__goals-mini__item">
-                <div className="dashboard__goals-mini__item-row">
-                  <div className="dashboard__goals-mini__item-info">
-                    <span className="dashboard__goals-mini__item-name">
-                      {g.name}
-                    </span>
-                    {g.deadline && (
-                      <span className="dashboard__goals-mini__item-deadline">
-                        by{" "}
-                        {new Date(g.deadline).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
+          </div>
+          {loading ? (
+            <div className="dashboard__chart-loading">
+              <div className="spinner spinner--sm" />
+            </div>
+          ) : activeGoals.length === 0 ? (
+            <p className="dashboard__goals-mini__empty">
+              No active goals —{" "}
+              <Link to="/goals" className="dashboard__view-all">
+                create one in Goals
+              </Link>
+            </p>
+          ) : (
+            <ul className="dashboard__goals-mini__list">
+              {activeGoals.map((g) => (
+                <li key={g.id} className="dashboard__goals-mini__item">
+                  <div className="dashboard__goals-mini__item-row">
+                    <div className="dashboard__goals-mini__item-info">
+                      <span className="dashboard__goals-mini__item-name">
+                        {g.name}
                       </span>
-                    )}
-                  </div>
-                  <span className="dashboard__goals-mini__item-amounts">
-                    {fmt(g.currentAmount)}{" "}
-                    <span className="dashboard__goals-mini__item-of">
-                      of {fmt(g.targetAmount)}
+                      {g.deadline && (
+                        <span className="dashboard__goals-mini__item-deadline">
+                          by{" "}
+                          {new Date(g.deadline).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </span>
+                      )}
+                    </div>
+                    <span className="dashboard__goals-mini__item-amounts">
+                      {fmt(g.currentAmount)}{" "}
+                      <span className="dashboard__goals-mini__item-of">
+                        of {fmt(g.targetAmount)}
+                      </span>
                     </span>
-                  </span>
-                </div>
-                <div className="dashboard__goals-mini__bar-track">
-                  <div
-                    className="dashboard__goals-mini__bar-fill"
-                    style={{ width: `${Math.min(g.pct, 100)}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Recent Transactions */}
-      <div className="dashboard__recent card">
-        <div className="dashboard__recent-header">
-          <h3 className="dashboard__section-title">
-            Recent Transactions
-            {!isCurrentMonth && (
-              <span className="dashboard__section-title__month">
-                {" "}
-                — {selectedMonthLabel}
-              </span>
-            )}
-          </h3>
-          <Link to="/transactions" className="dashboard__view-all">
-            View all →
-          </Link>
+                  </div>
+                  <div className="dashboard__goals-mini__bar-track">
+                    <div
+                      className="dashboard__goals-mini__bar-fill"
+                      style={{ width: `${Math.min(g.pct, 100)}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-        {loading ? (
-          <div className="dashboard__chart-loading">
-            <div className="spinner spinner--sm" />
-          </div>
-        ) : recentTx.length === 0 ? (
-          <p className="dashboard__recent-empty">
-            No transactions for {selectedMonthLabel}.
-          </p>
-        ) : (
-          <div className="dashboard__recent-list">
-            {recentTx.map((tx) => (
-              <RecentTxRow
-                key={tx.id}
-                tx={tx}
-                currencySymbol={currencySymbol}
-                onEdit={(t) => setEditingTx(t)}
-                onDelete={(id) => setDeleteId(id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
 
-      {/* AI Insights */}
-      <InsightsBlock />
+        <div className="dashboard__recent card">
+          <div className="dashboard__recent-header">
+            <h3 className="dashboard__section-title">
+              Recent Transactions
+              {!isCurrentMonth && (
+                <span className="dashboard__section-title__month">
+                  {" "}
+                  — {selectedMonthLabel}
+                </span>
+              )}
+            </h3>
+            <Link to="/transactions" className="dashboard__view-all">
+              View all →
+            </Link>
+          </div>
+          {loading ? (
+            <div className="dashboard__chart-loading">
+              <div className="spinner spinner--sm" />
+            </div>
+          ) : recentTx.length === 0 ? (
+            <p className="dashboard__recent-empty">
+              No transactions for {selectedMonthLabel}.
+            </p>
+          ) : (
+            <div className="dashboard__recent-list">
+              {recentTx.map((tx) => (
+                <RecentTxRow
+                  key={tx.id}
+                  tx={tx}
+                  currencySymbol={currencySymbol}
+                  onEdit={(t) => setEditingTx(t)}
+                  onDelete={(id) => setDeleteId(id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       <TransactionModal
         isOpen={modalOpen || !!editingTx}

@@ -1,9 +1,14 @@
 const express = require('express');
-const { getInsights } = require('../controllers/insightsController');
+const { generate, getHistory, getTokens, annual } = require('../controllers/insightsController');
 const { authenticate } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.post('/', authenticate, getInsights);
+router.use(authenticate);
+
+router.post('/generate', generate);
+router.get('/history', getHistory);
+router.get('/tokens', getTokens);
+router.post('/annual', annual);
 
 module.exports = router;

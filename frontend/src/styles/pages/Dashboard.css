@@ -327,6 +327,24 @@
   justify-content: center;
 }
 
+/* Bottom row: Active Goals + Recent Transactions */
+.dashboard__bottom-row {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.dashboard__bottom-row > div {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .dashboard__bottom-row {
+    flex-direction: column;
+  }
+}
+
 /* Recent Transactions */
 .dashboard__recent {
   display: flex;

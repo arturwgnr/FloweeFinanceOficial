@@ -8,6 +8,12 @@ const notifications = [
       "Budget list fixed due someone annoying complaining about it... 🙄",
     date: "2026-05-01",
   },
+  {
+    id: 2,
+    message:
+      "Flowee Insights is now live. 3 AI analyses per day, free. (Still on testing mode)",
+    date: "2026-08-05",
+  },
 ];
 
 export default notifications;
