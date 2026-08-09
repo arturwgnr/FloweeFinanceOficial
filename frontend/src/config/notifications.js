@@ -11,8 +11,8 @@ const notifications = [
   {
     id: 2,
     message:
-      "Flowee Insights is now live. 3 AI analyses per day, free. (Still on testing mode)",
-    date: "2026-08-05",
+      "Flowee AI Insights is now live. 3 AI analyses per day on free plan.",
+    date: "2026-08-09",
   },
 ];
 
