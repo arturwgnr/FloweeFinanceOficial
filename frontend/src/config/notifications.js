@@ -15,7 +15,7 @@ const notifications = [
     date: "2026-08-09",
   },
   {
-    id: 2,
+    id: 3,
     message: "Did you know? Flowee gets smarter every time you use it. 🤖",
     date: "2026-08-09",
   },
