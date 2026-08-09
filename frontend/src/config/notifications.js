@@ -14,6 +14,11 @@ const notifications = [
       "Flowee AI Insights is now live. 3 AI analyses per day on free plan.",
     date: "2026-08-09",
   },
+  {
+    id: 2,
+    message: "Did you know? Flowee gets smarter every time you use it. 🤖",
+    date: "2026-08-09",
+  },
 ];
 
 export default notifications;
