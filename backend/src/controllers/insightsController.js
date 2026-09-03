@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const { GoogleGenAI } = require('@google/genai');
+const { callOpenRouter } = require('../services/openrouter');
 
 const prisma = new PrismaClient();
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -9,6 +10,8 @@ const TOKEN_LIMIT = 3;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const GEMINI_MODEL = 'gemini-flash-latest';
 const GEMINI_TIMEOUT_MS = 25000;
+const MAX_GEMINI_ATTEMPTS = 3;
+const RETRYABLE_STATUSES = [429, 503];
 
 const SYSTEM_PROMPTS = {
   SUGGESTION:
@@ -156,7 +159,7 @@ Raw transactions (${transactions.length}):
 ${txLines}`;
 }
 
-async function generateGeminiText(prompt) {
+async function callGeminiOnce(prompt) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
   try {
@@ -171,7 +174,35 @@ async function generateGeminiText(prompt) {
   }
 }
 
-function mapGeminiError(err, res, fallbackMessage) {
+async function generateGeminiText(prompt) {
+  let lastErr;
+  for (let attempt = 1; attempt <= MAX_GEMINI_ATTEMPTS; attempt++) {
+    try {
+      return await callGeminiOnce(prompt);
+    } catch (err) {
+      lastErr = err;
+      const retryable = RETRYABLE_STATUSES.includes(err.status) || err.name === 'AbortError';
+      if (!retryable || attempt === MAX_GEMINI_ATTEMPTS) throw err;
+      await new Promise((r) => setTimeout(r, 1500 * attempt));
+    }
+  }
+  throw lastErr;
+}
+
+async function generateInsightText(systemPrompt, userMessage) {
+  const geminiPrompt = `${systemPrompt}\n\n${userMessage}`;
+  try {
+    return await generateGeminiText(geminiPrompt);
+  } catch (err) {
+    console.error('Gemini failed after retries, falling back to OpenRouter:', err);
+    return callOpenRouter({ system: systemPrompt, userMessage });
+  }
+}
+
+function mapInsightError(err, res, fallbackMessage) {
+  if (err.message?.startsWith('OpenRouter API error') || err.message === 'OPENROUTER_API_KEY is not set') {
+    return res.status(500).json({ error: 'AI insights are temporarily unavailable, please try again later.' });
+  }
   if (err.name === 'AbortError') {
     return res.status(500).json({ error: 'AI insights are taking too long, please try again.' });
   }
@@ -216,9 +247,8 @@ async function generate(req, res) {
 
     const context = await buildMonthContext(req.userId, m, y);
     const contextBlock = buildContextBlock(context, monthLabel, now, isCurrentMonth);
-    const prompt = `${SYSTEM_PROMPTS[type]}\n\n${contextBlock}`;
 
-    const insight = await generateGeminiText(prompt);
+    const insight = await generateInsightText(SYSTEM_PROMPTS[type], contextBlock);
 
     const saved = await prisma.insightHistory.create({
       data: { userId: req.userId, type, content: insight, month: m, year: y },
@@ -230,7 +260,7 @@ async function generate(req, res) {
     res.json({ insight, tokensRemaining, createdAt: saved.createdAt });
   } catch (err) {
     console.error('Insights generate error:', err);
-    mapGeminiError(err, res, 'Failed to generate insight');
+    mapInsightError(err, res, 'Failed to generate insight');
   }
 }
 
@@ -325,9 +355,7 @@ Months with transaction data (${monthsWithData.size} of 12):
 ${monthlySummaries.join('\n')}
 Months with NO transaction data: ${monthsWithoutData.length ? monthsWithoutData.join(', ') : 'none'}`;
 
-    const prompt = `${ANNUAL_SYSTEM_PROMPT}\n\n${contextBlock}`;
-
-    const insight = await generateGeminiText(prompt);
+    const insight = await generateInsightText(ANNUAL_SYSTEM_PROMPT, contextBlock);
 
     const saved = await prisma.insightHistory.create({
       data: { userId: req.userId, type: 'ANNUAL', content: insight, month: null, year: y },
@@ -339,7 +367,7 @@ Months with NO transaction data: ${monthsWithoutData.length ? monthsWithoutData.
     res.json({ insight, tokensRemaining, createdAt: saved.createdAt });
   } catch (err) {
     console.error('Insights annual error:', err);
-    mapGeminiError(err, res, 'Failed to generate annual analysis');
+    mapInsightError(err, res, 'Failed to generate annual analysis');
   }
 }
 
