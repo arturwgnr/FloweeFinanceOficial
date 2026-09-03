@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import toast from "react-hot-toast";
 import {
   Lightbulb,
   EyeOff,
@@ -207,8 +208,11 @@ export default function Insights() {
           resetAt: err.response.data.resetAt || t.resetAt,
         }));
         setError("Daily analysis limit reached.");
+        toast.error("Daily analysis limit reached.");
       } else {
-        setError(err.response?.data?.error || "Failed to generate insight.");
+        const message = err.response?.data?.error || "Failed to generate insight.";
+        setError(message);
+        toast.error(`${message} Please try again later.`);
       }
     } finally {
       setGenerating(null);
@@ -238,10 +242,12 @@ export default function Insights() {
           resetAt: err.response.data.resetAt || t.resetAt,
         }));
         setAnnualError("Daily analysis limit reached.");
+        toast.error("Daily analysis limit reached.");
       } else {
-        setAnnualError(
-          err.response?.data?.error || "Failed to generate annual analysis.",
-        );
+        const message =
+          err.response?.data?.error || "Failed to generate annual analysis.";
+        setAnnualError(message);
+        toast.error(`${message} Please try again later.`);
       }
     } finally {
       setGenerating(null);

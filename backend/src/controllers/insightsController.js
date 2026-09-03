@@ -1,12 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 
 const prisma = new PrismaClient();
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', BRL: 'R$' };
 const TOKEN_LIMIT = 3;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 const GEMINI_MODEL = 'gemini-flash-latest';
+const GEMINI_TIMEOUT_MS = 25000;
 
 const SYSTEM_PROMPTS = {
   SUGGESTION:
@@ -154,7 +156,25 @@ Raw transactions (${transactions.length}):
 ${txLines}`;
 }
 
+async function generateGeminiText(prompt) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  try {
+    const result = await genAI.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: { abortSignal: controller.signal },
+    });
+    return result.text;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function mapGeminiError(err, res, fallbackMessage) {
+  if (err.name === 'AbortError') {
+    return res.status(500).json({ error: 'AI insights are taking too long, please try again.' });
+  }
   if (err.status === 403) {
     return res.status(500).json({ error: 'AI insights are temporarily unavailable (authentication issue).' });
   }
@@ -198,10 +218,7 @@ async function generate(req, res) {
     const contextBlock = buildContextBlock(context, monthLabel, now, isCurrentMonth);
     const prompt = `${SYSTEM_PROMPTS[type]}\n\n${contextBlock}`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const geminiModel = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    const result = await geminiModel.generateContent(prompt);
-    const insight = result.response.text();
+    const insight = await generateGeminiText(prompt);
 
     const saved = await prisma.insightHistory.create({
       data: { userId: req.userId, type, content: insight, month: m, year: y },
@@ -310,10 +327,7 @@ Months with NO transaction data: ${monthsWithoutData.length ? monthsWithoutData.
 
     const prompt = `${ANNUAL_SYSTEM_PROMPT}\n\n${contextBlock}`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const geminiModel = genAI.getGenerativeModel({ model: GEMINI_MODEL });
-    const result = await geminiModel.generateContent(prompt);
-    const insight = result.response.text();
+    const insight = await generateGeminiText(prompt);
 
     const saved = await prisma.insightHistory.create({
       data: { userId: req.userId, type: 'ANNUAL', content: insight, month: null, year: y },
