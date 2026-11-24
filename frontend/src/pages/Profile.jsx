@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
+import { Check, RotateCcw, X } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import BudgetScopeModal from '../components/BudgetScopeModal';
+import ResetAccountModal from '../components/ResetAccountModal';
 import '../styles/pages/Profile.css';
 
 function CategorySection({ type, label, categories, onAdd, onRename, onDelete }) {
@@ -509,6 +512,95 @@ function TagsSummarySection() {
   );
 }
 
+const RESET_REMOVES = ['Transactions, including recurring ones', 'Budgets and the monthly budget goal', 'Savings goals', 'Custom categories (defaults are restored)', 'Saved Flowee Insights'];
+const RESET_KEEPS = ['Name, email and password', 'Currency preference'];
+
+function ResetAccountSection() {
+  const { updateUser } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  function openModal() {
+    setError('');
+    setOpen(true);
+  }
+
+  async function handleConfirm(password) {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/profile/reset', { password });
+      updateUser(res.data.user);
+      setOpen(false);
+      toast.success('Your account has been reset');
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not reset your account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section className="profile__card card profile-danger" aria-labelledby="profile-danger-title">
+      <div className="profile__section">
+        <h2 id="profile-danger-title" className="profile__section-title profile-danger__title">
+          Danger zone
+        </h2>
+
+        <div className="profile-danger__row">
+          <div className="profile-danger__body">
+            <h3 className="profile-danger__heading">Reset account</h3>
+            <p className="profile-danger__text">
+              Start over with a clean slate. Your login stays the same, but every
+              number in Flowee goes back to zero.
+            </p>
+          </div>
+          <button type="button" className="profile-danger__btn" onClick={openModal}>
+            <RotateCcw size={16} aria-hidden="true" />
+            Reset account
+          </button>
+        </div>
+
+        <div className="profile-danger__lists">
+          <div className="profile-danger__list">
+            <p className="profile-danger__list-title">Deleted</p>
+            <ul>
+              {RESET_REMOVES.map((item) => (
+                <li key={item} className="profile-danger__item profile-danger__item--remove">
+                  <X size={14} aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="profile-danger__list">
+            <p className="profile-danger__list-title">Kept</p>
+            <ul>
+              {RESET_KEEPS.map((item) => (
+                <li key={item} className="profile-danger__item profile-danger__item--keep">
+                  <Check size={14} aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <ResetAccountModal
+        isOpen={open}
+        onCancel={() => setOpen(false)}
+        onConfirm={handleConfirm}
+        loading={loading}
+        error={error}
+      />
+    </section>
+  );
+}
+
 export default function Profile() {
   const { user, updateUser } = useAuth();
   const [form, setForm] = useState({
@@ -702,6 +794,8 @@ export default function Profile() {
       />
 
       <TagsSummarySection />
+
+      <ResetAccountSection />
     </div>
   );
 }

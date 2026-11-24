@@ -108,4 +108,4 @@ async function remove(req, res) {
   }
 }
 
-module.exports = { list, create, update, remove };
+module.exports = { list, create, update, remove, DEFAULT_EXPENSE, DEFAULT_INCOME };
