@@ -723,3 +723,55 @@
     margin-left: 1.5rem;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Rolling (odometer) numbers in the panel preview
+   --------------------------------------------------------------------- */
+
+.odo {
+  display: inline-flex;
+  align-items: flex-start;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.odo__sym {
+  display: inline-block;
+  height: 1.15em;
+}
+
+.odo__digit {
+  display: inline-block;
+  height: 1.15em;
+  overflow: hidden;
+}
+
+.odo__strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform 160ms var(--ease-out);
+  will-change: transform;
+}
+
+.odo__strip > span {
+  display: block;
+  height: 1.15em;
+  text-align: center;
+}
+
+.odo__strip--0 { transform: translateY(0); }
+.odo__strip--1 { transform: translateY(-10%); }
+.odo__strip--2 { transform: translateY(-20%); }
+.odo__strip--3 { transform: translateY(-30%); }
+.odo__strip--4 { transform: translateY(-40%); }
+.odo__strip--5 { transform: translateY(-50%); }
+.odo__strip--6 { transform: translateY(-60%); }
+.odo__strip--7 { transform: translateY(-70%); }
+.odo__strip--8 { transform: translateY(-80%); }
+.odo__strip--9 { transform: translateY(-90%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .odo__strip {
+    transition: none;
+  }
+}

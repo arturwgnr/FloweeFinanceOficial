@@ -9,6 +9,7 @@ import {
   AuthField,
   AuthShell,
   AuthSubmit,
+  COUNT_DURATION,
   EMAIL_RE,
   PasswordField,
 } from "../components/AuthShell";
@@ -31,6 +32,7 @@ export default function Login() {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [draining, setDraining] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -57,12 +59,18 @@ export default function Login() {
     }
     setServerError("");
     setLoading(true);
+    setDraining(true);
+    const startedAt = Date.now();
     try {
       const res = await api.post("/auth/login", form);
+      // Let the panel numbers finish rolling down before leaving the page
+      const remaining = COUNT_DURATION - (Date.now() - startedAt);
+      if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
       login(res.data.token, res.data.user);
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err) {
+      setDraining(false);
       const msg = err.response?.data?.error;
       setServerError(
         msg === "Invalid credentials"
@@ -80,6 +88,7 @@ export default function Login() {
       subtitle="Sign in to pick up where your month left off."
       panelTitle="Your money, exactly where you left it."
       panelText="Budgets, goals and this month's numbers are waiting on your dashboard."
+      panelDraining={draining}
       footer={
         <>
           New to Flowee?{" "}
