@@ -172,13 +172,13 @@
 
 .lbtn--outline-ink {
   background: transparent;
-  color: var(--on-brand);
-  border-color: rgba(4, 38, 26, 0.35);
+  color: #ffffff;
+  border-color: #ffffff;
 }
 
 .lbtn--outline-ink:hover {
-  background: rgba(4, 38, 26, 0.08);
-  border-color: rgba(4, 38, 26, 0.55);
+  background: rgba(255, 255, 255, 0.14);
+  border-color: #ffffff;
 }
 
 /* ---------------------------------------------------------------------
