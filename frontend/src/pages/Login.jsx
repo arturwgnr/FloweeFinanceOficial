@@ -1,22 +1,61 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Lock, Mail } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import {
+  AuthAlert,
+  AuthField,
+  AuthShell,
+  AuthSubmit,
+  EMAIL_RE,
+  PasswordField,
+} from "../components/AuthShell";
 import "../styles/pages/Login.css";
+
+function validate(form) {
+  const errors = {};
+  if (!form.email.trim()) errors.email = "Enter your email address.";
+  else if (!EMAIL_RE.test(form.email.trim()))
+    errors.email = "Enter a valid email, like name@example.com.";
+  if (!form.password) errors.password = "Enter your password.";
+  return errors;
+}
+
+const FIELD_ORDER = ["email", "password"];
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [touched, setTouched] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const errors = validate(form);
+  const fieldError = (name) =>
+    (touched[name] || submitted) && errors[name] ? errors[name] : "";
+
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    if (serverError) setServerError("");
+  }
+
+  function handleBlur(e) {
+    setTouched((prev) => ({ ...prev, [e.target.name]: true }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+    setSubmitted(true);
+    const firstInvalid = FIELD_ORDER.find((f) => errors[f]);
+    if (firstInvalid) {
+      document.getElementById(firstInvalid)?.focus();
+      return;
+    }
+    setServerError("");
     setLoading(true);
     try {
       const res = await api.post("/auth/login", form);
@@ -24,8 +63,11 @@ export default function Login() {
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err) {
-      toast.error(
-        err.response?.data?.error || "Login failed. Please try again.",
+      const msg = err.response?.data?.error;
+      setServerError(
+        msg === "Invalid credentials"
+          ? "That email and password don't match. Check them and try again."
+          : msg || "Login failed. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -33,76 +75,57 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-page__container">
-        {/* Logo */}
-        <div className="auth-page__logo-wrap">
-          <Link to="/" className="auth-page__logo-link">
-            <div className="auth-page__logo-icon">
-              <h1 className="logo-symbol">ᨒ</h1>
-            </div>
-            <span className="auth-page__logo-text">Flowee</span>
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to pick up where your month left off."
+      panelTitle="Your money, exactly where you left it."
+      panelText="Budgets, goals and this month's numbers are waiting on your dashboard."
+      footer={
+        <>
+          New to Flowee?{" "}
+          <Link to="/register" className="auth__link">
+            Create an account
           </Link>
-        </div>
+        </>
+      }
+    >
+      <AuthAlert>{serverError}</AuthAlert>
 
-        <div className="card">
-          <div className="center-card">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              Welcome back
-            </h1>
-            <p className="text-gray-500 text-sm mb-6">
-              Sign in to your account to continue
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className="input"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                className="input"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full py-2.5"
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Don't have an account?{" "}
-            <Link to="/register" className="auth-page__link">
-              Create one
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+      <form className="auth__form" onSubmit={handleSubmit} noValidate>
+        <AuthField
+          id="email"
+          name="email"
+          type="email"
+          label="Email"
+          icon={Mail}
+          value={form.email}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="you@example.com"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          spellCheck="false"
+          required
+          error={fieldError("email")}
+        />
+        <PasswordField
+          id="password"
+          name="password"
+          label="Password"
+          icon={Lock}
+          value={form.password}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="Your password"
+          autoComplete="current-password"
+          required
+          error={fieldError("password")}
+        />
+        <AuthSubmit loading={loading} loadingText="Signing in…">
+          Sign in
+        </AuthSubmit>
+      </form>
+    </AuthShell>
   );
 }

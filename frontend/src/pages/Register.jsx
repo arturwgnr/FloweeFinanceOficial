@@ -1,26 +1,72 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Lock, Mail, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import {
+  AuthAlert,
+  AuthField,
+  AuthShell,
+  AuthSubmit,
+  EMAIL_RE,
+  PasswordField,
+} from "../components/AuthShell";
 import "../styles/pages/Login.css";
+import "../styles/pages/Register.css";
+
+const MIN_PASSWORD = 6;
+
+function validate(form) {
+  const errors = {};
+  if (!form.name.trim()) errors.name = "Enter your name.";
+  if (!form.email.trim()) errors.email = "Enter your email address.";
+  else if (!EMAIL_RE.test(form.email.trim()))
+    errors.email = "Enter a valid email, like name@example.com.";
+  if (!form.password) errors.password = "Choose a password.";
+  else if (form.password.length < MIN_PASSWORD)
+    errors.password = `Password must be at least ${MIN_PASSWORD} characters.`;
+  return errors;
+}
+
+const FIELD_ORDER = ["name", "email", "password"];
 
 export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [touched, setTouched] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [emailTaken, setEmailTaken] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const errors = validate(form);
+  const fieldError = (name) =>
+    (touched[name] || submitted) && errors[name] ? errors[name] : "";
+
   function handleChange(e) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    if (serverError) {
+      setServerError("");
+      setEmailTaken(false);
+    }
+  }
+
+  function handleBlur(e) {
+    setTouched((prev) => ({ ...prev, [e.target.name]: true }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (form.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    setSubmitted(true);
+    const firstInvalid = FIELD_ORDER.find((f) => errors[f]);
+    if (firstInvalid) {
+      document.getElementById(firstInvalid)?.focus();
       return;
     }
+    setServerError("");
+    setEmailTaken(false);
     setLoading(true);
     try {
       const res = await api.post("/auth/register", form);
@@ -28,100 +74,102 @@ export default function Register() {
       toast.success("Account created!");
       navigate("/dashboard");
     } catch (err) {
-      toast.error(
-        err.response?.data?.error || "Registration failed. Please try again.",
+      const taken = err.response?.status === 409;
+      setEmailTaken(taken);
+      setServerError(
+        taken
+          ? "An account with this email already exists."
+          : err.response?.data?.error || "Registration failed. Please try again.",
       );
     } finally {
       setLoading(false);
     }
   }
 
+  const passwordMet = form.password.length >= MIN_PASSWORD;
+
   return (
-    <div className="auth-page">
-      <div className="auth-page__container">
-        {/* Logo */}
-        <div className="auth-page__logo-wrap">
-          <Link to="/" className="auth-page__logo-link">
-            <div className="auth-page__logo-icon">
-              <h1 className="logo-symbol">ᨒ</h1>
-            </div>
-            <span className="auth-page__logo-text">Flowee</span>
+    <AuthShell
+      title="Create your account"
+      subtitle="Free to use. Takes less than a minute."
+      panelTitle="See where your money flows, starting today."
+      panelText="Log your first transaction and your dashboard, budgets and goals start filling in."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link to="/login" className="auth__link">
+            Sign in
           </Link>
-        </div>
+        </>
+      }
+    >
+      <AuthAlert>
+        {serverError && (
+          <>
+            {serverError}
+            {emailTaken && (
+              <>
+                {" "}
+                <Link to="/login" className="auth__link">
+                  Sign in instead
+                </Link>
+              </>
+            )}
+          </>
+        )}
+      </AuthAlert>
 
-        <div className="card">
-          <div className="center-card">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
-              Create your account
-            </h1>
-            <p className="text-gray-500 text-sm mb-6">
-              Start managing your finances today, it's free
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="label" htmlFor="name">
-                Full name
-              </label>
-              <input
-                id="name"
-                type="text"
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                className="input"
-                placeholder="Artur Wagner"
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                value={form.email}
-                onChange={handleChange}
-                className="input"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={handleChange}
-                className="input"
-                placeholder="Min. 6 characters"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full py-2.5"
-            >
-              {loading ? "Creating account..." : "Create account"}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500 mt-6">
-            Already have an account?{" "}
-            <Link to="/login" className="auth-page__link">
-              Sign in
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+      <form className="auth__form" onSubmit={handleSubmit} noValidate>
+        <AuthField
+          id="name"
+          name="name"
+          label="Full name"
+          icon={User}
+          value={form.name}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="Your name"
+          autoComplete="name"
+          required
+          error={fieldError("name")}
+        />
+        <AuthField
+          id="email"
+          name="email"
+          type="email"
+          label="Email"
+          icon={Mail}
+          value={form.email}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="you@example.com"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          spellCheck="false"
+          required
+          error={fieldError("email")}
+        />
+        <PasswordField
+          id="password"
+          name="password"
+          label="Password"
+          icon={Lock}
+          value={form.password}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="Create a password"
+          autoComplete="new-password"
+          required
+          minLength={MIN_PASSWORD}
+          hint={`At least ${MIN_PASSWORD} characters`}
+          hintMet={passwordMet}
+          error={fieldError("password")}
+        />
+        <AuthSubmit loading={loading} loadingText="Creating account…">
+          Create account
+        </AuthSubmit>
+      </form>
+    </AuthShell>
   );
 }
