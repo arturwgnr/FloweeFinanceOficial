@@ -437,8 +437,8 @@
 
 @media (min-width: 1024px) {
   .auth {
-    /* Panel 30% (left) / form 70% (right) */
-    grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+    /* Panel 45% (left) / form 55% (right) */
+    grid-template-columns: minmax(0, 9fr) minmax(0, 11fr);
   }
 
   .auth__main {
@@ -695,7 +695,7 @@
 }
 
 /* ---------------------------------------------------------------------
-   30 / 70 split: tune the narrower brand panel
+   45 / 55 split: brand panel sizing
    (kept at the end so it wins over the base panel rules above)
    --------------------------------------------------------------------- */
 
@@ -709,11 +709,11 @@
   }
 
   .auth-mock {
-    display: none;
+    display: grid;
   }
 }
 
-/* Enough room for the product preview cards in the 30% panel */
+/* Enough room for the product preview cards on wide screens */
 @media (min-width: 1440px) {
   .auth-mock {
     display: grid;
