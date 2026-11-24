@@ -461,8 +461,10 @@
     display: flex;
     align-items: center;
     padding: 3rem;
-    margin: 0.75rem;
-    border-radius: 24px;
+    margin: 0;
+    border-radius: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     isolation: isolate;
     background:
